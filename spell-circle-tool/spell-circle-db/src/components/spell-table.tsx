@@ -757,10 +757,14 @@ export function SpellTable() {
         </div>
       </div>
 
-      {/* Parchment Table */}
+      {/* Parchment Scroll Table */}
       <div className="p-6 pt-4">
         <div className="parchment-table-wrapper">
           <div className="parchment-table">
+            {/* Scroll roll - top */}
+            <div className="parchment-scroll-top" />
+            {/* Scroll roll - bottom */}
+            <div className="parchment-scroll-bottom" />
             {/* Edge wear overlay */}
             <div className="parchment-edge-wear" />
             {/* Crease lines */}

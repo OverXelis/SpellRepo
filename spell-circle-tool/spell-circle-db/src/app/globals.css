@@ -66,43 +66,65 @@ body::after {
   pointer-events: none;
 }
 
-/* ===== PREMIUM PARCHMENT TABLE ===== */
+/* ===== PREMIUM PARCHMENT SCROLL ===== */
 .parchment-table-wrapper {
   position: relative;
-  padding: 8px;
-  margin: -8px;
+  padding: 20px 12px;
+  margin: -12px -12px -20px -12px;
 }
 
 /* Main drop shadow - solid and pronounced */
 .parchment-table-wrapper::before {
   content: '';
   position: absolute;
-  inset: 12px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-  filter: blur(20px);
-  transform: translateY(8px);
-  z-index: -1;
+  top: 40px;
+  left: 24px;
+  right: 24px;
+  bottom: 8px;
+  background: #000;
+  border-radius: 4px;
+  filter: blur(24px);
+  opacity: 0.55;
+  z-index: 0;
+}
+
+/* Secondary softer shadow for depth */
+.parchment-table-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 50px;
+  left: 40px;
+  right: 40px;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  filter: blur(40px);
+  z-index: 0;
 }
 
 .parchment-table {
   position: relative;
+  z-index: 1;
   background: 
     /* Base parchment - warm aged paper */
     linear-gradient(
-      168deg,
-      #e8dcc4 0%,
-      #f2e8d8 8%,
-      #f5efe3 20%,
-      #f0e6d6 40%,
-      #ebe0ce 60%,
-      #e5d8c4 80%,
-      #dfd0b8 95%,
-      #d8c8ac 100%
+      180deg,
+      #d8c8a8 0%,
+      #e8dcc4 3%,
+      #f2e8d8 10%,
+      #f5efe3 25%,
+      #f0e6d6 50%,
+      #ebe0ce 75%,
+      #e5d8c4 90%,
+      #e0d0b8 97%,
+      #d5c5a5 100%
     );
-  overflow: hidden;
-  /* Organic edge shape using clip-path */
-  border-radius: 3px;
+  overflow: visible;
+  border-radius: 2px;
+  /* Crisp edges with subtle border */
+  box-shadow: 
+    0 0 0 1px rgba(139, 115, 85, 0.3),
+    inset 0 0 30px rgba(139, 115, 85, 0.08);
 }
 
 /* Paper fiber texture - subtle grain */
@@ -111,9 +133,10 @@ body::after {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035' numOctaves='6' stitchTiles='stitch'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f8f4ec' surfaceScale='1.5'%3E%3CfeDistantLight azimuth='45' elevation='50'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
-  opacity: 0.35;
+  opacity: 0.3;
   mix-blend-mode: multiply;
   pointer-events: none;
+  border-radius: inherit;
 }
 
 /* Ink stains, age spots, and character marks */
@@ -121,6 +144,7 @@ body::after {
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: 
     /* Subtle ink stain top area */
     radial-gradient(ellipse 180px 100px at 82% 5%, rgba(45, 35, 50, 0.045) 0%, transparent 70%),
@@ -139,44 +163,114 @@ body::after {
   pointer-events: none;
 }
 
-/* Torn/worn edge effect - left side */
+/* Scroll roll effect - TOP */
+.parchment-scroll-top {
+  position: absolute;
+  top: -16px;
+  left: -4px;
+  right: -4px;
+  height: 24px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.parchment-scroll-top::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(180deg,
+    #c4b494 0%,
+    #d8c8a8 20%,
+    #e5d8c0 40%,
+    #ddd0b8 60%,
+    #d0c0a0 80%,
+    #c8b898 100%
+  );
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow: 
+    0 -2px 4px rgba(0, 0, 0, 0.15),
+    inset 0 4px 8px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Top roll edge highlight */
+.parchment-scroll-top::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-radius: 50%;
+}
+
+/* Scroll roll effect - BOTTOM */
+.parchment-scroll-bottom {
+  position: absolute;
+  bottom: -16px;
+  left: -4px;
+  right: -4px;
+  height: 24px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.parchment-scroll-bottom::before {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(0deg,
+    #b8a888 0%,
+    #c8b898 20%,
+    #d8c8a8 40%,
+    #d0c0a0 60%,
+    #c4b494 80%,
+    #b8a484 100%
+  );
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 0 -4px 8px rgba(255, 255, 255, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Bottom roll shadow line */
+.parchment-scroll-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  right: 10px;
+  height: 4px;
+  background: linear-gradient(0deg,
+    rgba(0, 0, 0, 0.12) 0%,
+    transparent 100%
+  );
+  border-radius: 50%;
+}
+
+/* Inner edge shadows for depth */
 .parchment-edge-wear {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 2;
-  /* Subtle edge darkening for depth */
+  border-radius: inherit;
   box-shadow: 
-    inset 2px 0 8px rgba(139, 115, 85, 0.15),
-    inset -2px 0 8px rgba(139, 115, 85, 0.12),
-    inset 0 2px 6px rgba(139, 115, 85, 0.1),
-    inset 0 -3px 10px rgba(100, 80, 55, 0.18);
-}
-
-/* Organic torn edge overlay - top */
-.parchment-edge-wear::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 6' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,3 Q5,1 10,3 T20,2 T30,4 T40,2 T50,3 T60,1 T70,4 T80,2 T90,3 T100,2 L100,6 L0,6 Z' fill='%230a0e1a'/%3E%3C/svg%3E") repeat-x;
-  background-size: 100px 6px;
-  opacity: 0.95;
-}
-
-/* Organic torn edge overlay - bottom */
-.parchment-edge-wear::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 8' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,5 Q8,7 15,4 T30,6 T45,3 T60,5 T75,4 T90,6 T100,4 L100,0 L0,0 Z' fill='%230a0e1a'/%3E%3C/svg%3E") repeat-x;
-  background-size: 100px 8px;
-  opacity: 0.95;
+    inset 3px 0 12px rgba(139, 115, 85, 0.12),
+    inset -3px 0 12px rgba(139, 115, 85, 0.12),
+    inset 0 8px 16px rgba(100, 80, 55, 0.08),
+    inset 0 -8px 16px rgba(100, 80, 55, 0.1);
 }
 
 /* Crease/fold lines for aged look */
@@ -185,51 +279,58 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 1;
+  border-radius: inherit;
   background:
     /* Horizontal fold */
     linear-gradient(180deg, 
       transparent 48%, 
-      rgba(160, 130, 90, 0.06) 49%, 
-      rgba(90, 70, 45, 0.08) 50%, 
-      rgba(180, 150, 110, 0.04) 51%,
+      rgba(160, 130, 90, 0.05) 49%, 
+      rgba(90, 70, 45, 0.07) 50%, 
+      rgba(180, 150, 110, 0.03) 51%,
       transparent 52%
     ),
     /* Subtle vertical crease */
     linear-gradient(90deg, 
       transparent 30%, 
-      rgba(140, 115, 80, 0.03) 31%, 
-      rgba(80, 60, 40, 0.04) 31.5%, 
-      rgba(160, 135, 95, 0.025) 32%,
+      rgba(140, 115, 80, 0.025) 31%, 
+      rgba(80, 60, 40, 0.035) 31.5%, 
+      rgba(160, 135, 95, 0.02) 32%,
       transparent 33%
     );
 }
 
-/* Left torn edge strip */
+/* Left worn edge */
 .parchment-table > .overflow-x-auto::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -1px;
+  left: 0;
   bottom: 0;
-  width: 6px;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 6 100' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3,0 Q1,8 4,15 T2,30 T4,45 T1,60 T3,75 T2,90 T4,100 L0,100 L0,0 Z' fill='%230a0e1a'/%3E%3C/svg%3E") repeat-y;
-  background-size: 6px 100px;
+  width: 8px;
+  background: linear-gradient(90deg,
+    rgba(139, 115, 85, 0.15) 0%,
+    rgba(139, 115, 85, 0.05) 40%,
+    transparent 100%
+  );
   z-index: 10;
-  opacity: 0.95;
+  pointer-events: none;
 }
 
-/* Right torn edge strip */
+/* Right worn edge */
 .parchment-table > .overflow-x-auto::after {
   content: '';
   position: absolute;
   top: 0;
-  right: -1px;
+  right: 0;
   bottom: 0;
-  width: 6px;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 6 100' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3,0 Q5,10 2,20 T4,35 T2,50 T5,65 T3,80 T4,95 T2,100 L6,100 L6,0 Z' fill='%230a0e1a'/%3E%3C/svg%3E") repeat-y;
-  background-size: 6px 100px;
+  width: 8px;
+  background: linear-gradient(270deg,
+    rgba(139, 115, 85, 0.15) 0%,
+    rgba(139, 115, 85, 0.05) 40%,
+    transparent 100%
+  );
   z-index: 10;
-  opacity: 0.95;
+  pointer-events: none;
 }
 
 /* Parchment text colors - rich ink */
