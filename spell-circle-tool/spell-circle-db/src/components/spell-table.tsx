@@ -788,7 +788,7 @@ export function SpellTable() {
                       });
                       hoverPreviewTimeout.current = setTimeout(() => {
                         setShowPreview(true);
-                      }, 400);
+                      }, 300);
                     }}
                     onMouseLeave={() => {
                       if (hoverPreviewTimeout.current) {
