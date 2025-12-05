@@ -98,7 +98,7 @@ export function SpellTable() {
 
   // Hover preview state
   const [hoveredSpell, setHoveredSpell] = useState<SpellCombination | null>(null);
-  const [hoverRowBounds, setHoverRowBounds] = useState<DOMRect | null>(null);
+  const [hoverRowBounds, setHoverRowBounds] = useState<{ top: number; left: number; right: number; bottom: number; width: number; height: number } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const hoverPreviewTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -776,11 +776,19 @@ export function SpellTable() {
                       if (hoverPreviewTimeout.current) {
                         clearTimeout(hoverPreviewTimeout.current);
                       }
+                      const rect = e.currentTarget.getBoundingClientRect();
                       setHoveredSpell(spell);
-                      setHoverRowBounds(e.currentTarget.getBoundingClientRect());
+                      setHoverRowBounds({
+                        top: rect.top,
+                        left: rect.left,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        width: rect.width,
+                        height: rect.height,
+                      });
                       hoverPreviewTimeout.current = setTimeout(() => {
                         setShowPreview(true);
-                      }, 500);
+                      }, 400);
                     }}
                     onMouseLeave={() => {
                       if (hoverPreviewTimeout.current) {

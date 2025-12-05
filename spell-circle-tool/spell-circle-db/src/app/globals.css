@@ -810,6 +810,40 @@ select:focus-visible {
   }
 }
 
+/* ===== HOVER CARD SHIMMER ===== */
+@keyframes card-shimmer {
+  0%, 100% { 
+    background-position: 200% 200%; 
+    opacity: 0;
+  }
+  50% { 
+    background-position: 0% 0%; 
+    opacity: 1;
+  }
+}
+
+.card-shimmer-border {
+  background: linear-gradient(135deg, transparent 40%, rgba(139, 115, 85, 0.3) 50%, transparent 60%);
+  background-size: 200% 200%;
+  animation: card-shimmer 4s ease-in-out infinite;
+}
+
+/* ===== FLOATING CARD ENTRANCE ===== */
+@keyframes card-float-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.card-float-in {
+  animation: card-float-in 0.3s ease-out forwards;
+}
+
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
