@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel_Decorative, Philosopher, Rock_Salt } from "next/font/google";
+import { Cinzel_Decorative, Philosopher, Rock_Salt, Caveat } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "@/components/ui/toast";
 
@@ -21,6 +21,13 @@ const rockSalt = Rock_Salt({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-rocksalt",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-caveat",
   display: "swap",
 });
 
@@ -47,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cinzelDecorative.variable} ${philosopher.variable} ${rockSalt.variable}`}>
+    <html lang="en" className={`${cinzelDecorative.variable} ${philosopher.variable} ${rockSalt.variable} ${caveat.variable}`}>
       <body className="min-h-screen bg-dark-900 text-slate-100 antialiased">
         {children}
         <ToastContainer />

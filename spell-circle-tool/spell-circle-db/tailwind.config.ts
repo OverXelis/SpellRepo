@@ -12,6 +12,7 @@ const config: Config = {
         cinzel: ["var(--font-cinzel)", "serif"],
         philosopher: ["var(--font-philosopher)", "serif"],
         rocksalt: ["var(--font-rocksalt)", "cursive"],
+        caveat: ["var(--font-caveat)", "cursive"],
       },
       colors: {
         // Dark background colors

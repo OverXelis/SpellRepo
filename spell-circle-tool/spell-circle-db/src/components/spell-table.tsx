@@ -299,7 +299,7 @@ export function SpellTable() {
                       updateSpellSummary(spell.id, editingSummaryValue.trim());
                       setEditingSummarySpellId(null);
                     }}
-                    className="bg-parchment-100 border border-parchment-500/50 rounded px-2 py-0.5 text-xs text-parchment-800 focus:outline-none focus:ring-1 focus:ring-parchment-600/50 w-full max-w-md font-philosopher"
+                    className="bg-parchment-100 border border-parchment-500/50 rounded px-2 py-1 text-base text-parchment-800 focus:outline-none focus:ring-1 focus:ring-parchment-600/50 w-full max-w-md font-caveat"
                     autoFocus
                     placeholder="Add a short summary..."
                     maxLength={100}
@@ -325,11 +325,11 @@ export function SpellTable() {
                   }}
                 >
                   {hasSummary ? (
-                    <span className="text-sm text-parchment-700 italic line-clamp-1 max-w-md font-philosopher">
+                    <span className="text-base text-parchment-700 line-clamp-1 max-w-md font-caveat" style={{ color: '#4a3d30' }}>
                       {spell.summary}
                     </span>
                   ) : (
-                    <span className="text-xs text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity font-philosopher">
+                    <span className="text-sm text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity font-caveat">
                       + Add summary
                     </span>
                   )}
