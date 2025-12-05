@@ -11,6 +11,7 @@ const config: Config = {
       fontFamily: {
         cinzel: ["var(--font-cinzel)", "serif"],
         philosopher: ["var(--font-philosopher)", "serif"],
+        rocksalt: ["var(--font-rocksalt)", "cursive"],
       },
       colors: {
         // Dark background colors

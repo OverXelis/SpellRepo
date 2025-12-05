@@ -141,53 +141,67 @@ export function SpellTable() {
           return (
             <div className="flex items-center gap-1">
               <button
-                onClick={() => updateSpellStatus(
-                  spell.id, 
-                  spell.status === 'favorite' ? 'normal' : 'favorite'
-                )}
-                className={`p-1 rounded transition-colors ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateSpellStatus(
+                    spell.id, 
+                    spell.status === 'favorite' ? 'normal' : 'favorite'
+                  );
+                }}
+                className={`p-1.5 rounded transition-colors ${
                   spell.status === 'favorite' 
-                    ? 'text-yellow-400 hover:text-yellow-300' 
-                    : 'text-slate-600 hover:text-yellow-400'
+                    ? 'text-amber-600 hover:text-amber-500' 
+                    : 'text-parchment-500 hover:text-amber-600'
                 }`}
                 title={spell.status === 'favorite' ? 'Remove from favorites' : 'Add to favorites'}
               >
                 {spell.status === 'favorite' ? (
-                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-5 w-5 fill-current drop-shadow-sm" />
                 ) : (
-                  <StarOff className="h-4 w-4" />
+                  <StarOff className="h-5 w-5" />
                 )}
               </button>
               <button
-                onClick={() => updateSpellStatus(
-                  spell.id, 
-                  spell.status === 'dud' ? 'normal' : 'dud'
-                )}
-                className={`p-1 rounded transition-colors ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateSpellStatus(
+                    spell.id, 
+                    spell.status === 'dud' ? 'normal' : 'dud'
+                  );
+                }}
+                className={`p-1.5 rounded transition-colors ${
                   spell.status === 'dud' 
-                    ? 'text-red-400 hover:text-red-300' 
-                    : 'text-slate-600 hover:text-red-400'
+                    ? 'text-red-700 hover:text-red-600' 
+                    : 'text-parchment-500 hover:text-red-700'
                 }`}
                 title={spell.status === 'dud' ? 'Remove dud marking' : 'Mark as dud'}
               >
-                <XCircle className="h-4 w-4" />
+                <XCircle className="h-5 w-5" />
               </button>
             </div>
           );
         },
-        size: 70,
+        size: 80,
       },
       {
         id: 'spellName',
         header: ({ column }) => (
-          <Button
-            variant="ghost"
+          <button
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="-ml-4"
+            className="flex items-center gap-2 -ml-1 px-2 py-1 rounded transition-all duration-200"
+            style={{
+              color: '#4a3d2e',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(180, 160, 130, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             Spell
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
+            <ArrowUpDown className="h-4 w-4" style={{ color: '#7a6a55' }} />
+          </button>
         ),
         accessorFn: (row) => generateSpellName(row, runeNameConfig),
         cell: ({ row }) => {
@@ -220,7 +234,7 @@ export function SpellTable() {
                       updateSpellCustomName(spell.id, editingNameValue.trim());
                       setEditingNameSpellId(null);
                     }}
-                    className="bg-dark-700 border border-arcane-500/50 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-arcane-500 w-full max-w-xs"
+                    className="bg-parchment-100 border border-parchment-500/60 rounded px-2 py-1.5 text-sm font-rocksalt text-parchment-900 focus:outline-none focus:ring-2 focus:ring-parchment-600/50 w-full max-w-xs"
                     autoFocus
                     placeholder="Leave empty for auto-name"
                   />
@@ -229,7 +243,7 @@ export function SpellTable() {
                       updateSpellCustomName(spell.id, editingNameValue.trim());
                       setEditingNameSpellId(null);
                     }}
-                    className="p-1 text-green-400 hover:text-green-300"
+                    className="p-1 text-green-700 hover:text-green-600"
                   >
                     <Check className="h-4 w-4" />
                   </button>
@@ -243,19 +257,25 @@ export function SpellTable() {
                     setEditingNameValue(spell.customName || '');
                   }}
                 >
-                  <span className={`font-medium ${
+                  <span className={`font-rocksalt text-base tracking-wide ${
                     spell.status === 'dud' 
-                      ? 'text-slate-500 line-through' 
+                      ? 'text-parchment-600 line-through opacity-60' 
                       : spell.status === 'favorite'
-                      ? 'text-yellow-300'
-                      : 'text-slate-200'
-                  }`}>
+                      ? 'text-amber-900'
+                      : 'text-parchment-900'
+                  }`}
+                  style={{
+                    textShadow: spell.status === 'favorite' 
+                      ? '0 0 12px rgba(180, 130, 50, 0.4)' 
+                      : '0 1px 0 rgba(255, 255, 255, 0.5)',
+                  }}
+                  >
                     {name}
                   </span>
                   {hasCustomName && (
-                    <span className="text-arcane-400 text-xs ml-1" title="Custom name">✎</span>
+                    <span className="text-amber-700 text-xs ml-1" title="Custom name">✎</span>
                   )}
-                  <Pencil className="h-3 w-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                  <Pencil className="h-3 w-3 text-parchment-600 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
                 </div>
               )}
 
@@ -279,18 +299,18 @@ export function SpellTable() {
                       updateSpellSummary(spell.id, editingSummaryValue.trim());
                       setEditingSummarySpellId(null);
                     }}
-                    className="bg-dark-700 border border-dark-500/50 rounded px-2 py-0.5 text-xs text-slate-400 focus:outline-none focus:ring-1 focus:ring-arcane-500/50 w-full max-w-md"
+                    className="bg-parchment-100 border border-parchment-500/50 rounded px-2 py-0.5 text-xs text-parchment-800 focus:outline-none focus:ring-1 focus:ring-parchment-600/50 w-full max-w-md font-philosopher"
                     autoFocus
                     placeholder="Add a short summary..."
                     maxLength={100}
                   />
-                  <span className="text-xs text-slate-600 min-w-[3ch]">{editingSummaryValue.length}/100</span>
+                  <span className="text-xs text-parchment-600 min-w-[3ch]">{editingSummaryValue.length}/100</span>
                   <button
                     onClick={() => {
                       updateSpellSummary(spell.id, editingSummaryValue.trim());
                       setEditingSummarySpellId(null);
                     }}
-                    className="p-0.5 text-green-400 hover:text-green-300"
+                    className="p-0.5 text-green-700 hover:text-green-600"
                   >
                     <Check className="h-3 w-3" />
                   </button>
@@ -305,16 +325,16 @@ export function SpellTable() {
                   }}
                 >
                   {hasSummary ? (
-                    <span className="text-xs text-slate-500 italic line-clamp-1 max-w-md">
+                    <span className="text-sm text-parchment-700 italic line-clamp-1 max-w-md font-philosopher">
                       {spell.summary}
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-600 opacity-0 group-hover/summary:opacity-100 transition-opacity">
+                    <span className="text-xs text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity font-philosopher">
                       + Add summary
                     </span>
                   )}
                   {hasSummary && (
-                    <Pencil className="h-2.5 w-2.5 text-slate-600 opacity-0 group-hover/summary:opacity-100 transition-opacity flex-shrink-0" />
+                    <Pencil className="h-2.5 w-2.5 text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity flex-shrink-0" />
                   )}
                 </div>
               )}
@@ -374,22 +394,24 @@ export function SpellTable() {
                   }}
                   className={`p-1.5 rounded transition-colors ${
                     hasDescription 
-                      ? 'text-arcane-400 hover:text-arcane-300' 
-                      : 'text-slate-600 hover:text-slate-400'
+                      ? 'text-amber-700 hover:text-amber-600' 
+                      : 'text-parchment-500 hover:text-parchment-700'
                   }`}
                   title={hasDescription ? 'View/Edit notes' : 'Add notes'}
                 >
-                  <FileText className={`h-4 w-4 ${hasDescription ? 'fill-arcane-400/20' : ''}`} />
+                  <FileText className={`h-4 w-4 ${hasDescription ? 'fill-amber-700/20' : ''}`} />
                 </button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => await deleteSpell(spell.id)}
-                className="h-8 w-8 text-slate-400 hover:text-red-400"
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await deleteSpell(spell.id);
+                }}
+                className="p-1.5 rounded text-parchment-500 hover:text-red-700 transition-colors"
+                title="Delete spell"
               >
                 <Trash2 className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           );
         },
@@ -735,43 +757,77 @@ export function SpellTable() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="sticky-header bg-dark-700/95 backdrop-blur-sm">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-4 py-4 text-left text-sm font-philosopher font-medium text-slate-400 border-b border-dark-600/50"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-dark-700/50">
-            {table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row, index) => {
-                const spell = row.original;
-                const isSelected = selectedSpellId === spell.id;
-                return (
-                  <tr 
-                    key={row.id} 
-                    className={`table-row-animate table-row-alt transition-colors duration-150 cursor-pointer ${
-                      spell.status === 'dud' ? 'opacity-50' : ''
-                    } ${spell.status === 'favorite' ? 'bg-gold-900/5' : ''} ${
-                      isSelected ? 'row-selected' : ''
-                    }`}
-                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
-                    onClick={() => setSelectedSpellId(isSelected ? null : spell.id)}
+      {/* Parchment Table */}
+      <div className="p-6 pt-4">
+        <div className="parchment-table-wrapper">
+          <div className="parchment-table">
+            {/* Edge wear overlay */}
+            <div className="parchment-edge-wear" />
+            {/* Crease lines */}
+            <div className="parchment-creases" />
+            
+            <div className="overflow-x-auto relative">
+              <table className="w-full relative z-[1]">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id} style={{ borderBottom: '2px solid rgba(139, 115, 85, 0.25)' }}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="px-5 py-4 text-left text-sm font-philosopher font-bold tracking-wide"
+                          style={{ 
+                            color: '#4a3d2e',
+                            background: 'linear-gradient(180deg, rgba(215, 200, 175, 0.5) 0%, rgba(225, 212, 190, 0.3) 100%)',
+                          }}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.length > 0 ? (
+                    table.getRowModel().rows.map((row, index) => {
+                      const spell = row.original;
+                      const isSelected = selectedSpellId === spell.id;
+                      return (
+                        <tr 
+                          key={row.id} 
+                          className={`table-row-animate transition-all duration-200 cursor-pointer ${
+                            spell.status === 'dud' ? 'opacity-40' : ''
+                          }`}
+                          style={{ 
+                            animationDelay: `${Math.min(index * 30, 300)}ms`,
+                            background: isSelected 
+                              ? 'linear-gradient(90deg, rgba(180, 150, 100, 0.25) 0%, rgba(200, 175, 130, 0.15) 50%, rgba(180, 150, 100, 0.25) 100%)'
+                              : spell.status === 'favorite'
+                              ? 'linear-gradient(90deg, rgba(200, 170, 100, 0.15) 0%, rgba(220, 190, 130, 0.08) 50%, rgba(200, 170, 100, 0.15) 100%)'
+                              : index % 2 === 0 
+                              ? 'transparent' 
+                              : 'rgba(180, 160, 130, 0.08)',
+                            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = 'linear-gradient(90deg, rgba(170, 145, 100, 0.18) 0%, rgba(190, 165, 120, 0.12) 50%, rgba(170, 145, 100, 0.18) 100%)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = spell.status === 'favorite'
+                                ? 'linear-gradient(90deg, rgba(200, 170, 100, 0.15) 0%, rgba(220, 190, 130, 0.08) 50%, rgba(200, 170, 100, 0.15) 100%)'
+                                : index % 2 === 0 
+                                ? 'transparent' 
+                                : 'rgba(180, 160, 130, 0.08)';
+                            }
+                          }}
+                          onClick={() => setSelectedSpellId(isSelected ? null : spell.id)}
                     onMouseEnter={(e) => {
                       if (hoverPreviewTimeout.current) {
                         clearTimeout(hoverPreviewTimeout.current);
@@ -800,7 +856,11 @@ export function SpellTable() {
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-sm text-slate-300">
+                      <td 
+                        key={cell.id} 
+                        className="px-5 py-4 text-sm ink-text"
+                        style={{ color: '#2d251c' }}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -812,42 +872,63 @@ export function SpellTable() {
               })
             ) : (
               <tr>
-                <td colSpan={columns.length}>
+                <td colSpan={columns.length} style={{ background: 'rgba(235, 225, 205, 0.5)' }}>
                   <EmptyState type={spells.length === 0 ? 'no-spells' : 'no-results'} />
                 </td>
               </tr>
             )}
-          </tbody>
-        </table>
-      </div>
+                </tbody>
+              </table>
+            </div>
 
-      {/* Pagination */}
-      {filteredSpells.length > 0 && (
-        <div className="flex items-center justify-between border-t border-dark-600 px-4 py-3">
-          <div className="text-sm text-slate-400">
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount()}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
+            {/* Pagination inside parchment */}
+            {filteredSpells.length > 0 && (
+              <div 
+                className="flex items-center justify-between px-5 py-4 relative z-[1]"
+                style={{ 
+                  borderTop: '2px solid rgba(139, 115, 85, 0.2)',
+                  background: 'linear-gradient(0deg, rgba(200, 185, 160, 0.3) 0%, rgba(215, 200, 175, 0.15) 100%)',
+                }}
+              >
+                <div className="text-sm font-philosopher font-medium" style={{ color: '#5c4d3d' }}>
+                  Page {table.getState().pagination.pageIndex + 1} of{' '}
+                  {table.getPageCount()}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="px-4 py-2 text-sm font-philosopher font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                    style={{ 
+                      color: '#4a3d2e',
+                      background: 'linear-gradient(180deg, rgba(235, 225, 205, 0.9) 0%, rgba(215, 200, 175, 0.9) 100%)',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(139, 115, 85, 0.3)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  <button
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="px-4 py-2 text-sm font-philosopher font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                    style={{ 
+                      color: '#4a3d2e',
+                      background: 'linear-gradient(180deg, rgba(235, 225, 205, 0.9) 0%, rgba(215, 200, 175, 0.9) 100%)',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(139, 115, 85, 0.3)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Description Panel */}
       <SpellDescriptionPanel
