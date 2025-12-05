@@ -15,7 +15,6 @@ import {
 import { useSpellStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -61,6 +60,7 @@ export function SpellTable() {
     addTag,
     updateSpellDescription,
     updateSpellCustomName,
+    updateSpellSummary,
     removeTag,
     editTag,
   } = useSpellStore();
@@ -85,6 +85,10 @@ export function SpellTable() {
   const [editingNameSpellId, setEditingNameSpellId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
 
+  // Inline summary editing state
+  const [editingSummarySpellId, setEditingSummarySpellId] = useState<string | null>(null);
+  const [editingSummaryValue, setEditingSummaryValue] = useState('');
+
   // Tag editing state
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editingTagValue, setEditingTagValue] = useState('');
@@ -94,7 +98,7 @@ export function SpellTable() {
 
   // Hover preview state
   const [hoveredSpell, setHoveredSpell] = useState<SpellCombination | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoverRowBounds, setHoverRowBounds] = useState<DOMRect | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const hoverPreviewTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -181,7 +185,7 @@ export function SpellTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className="-ml-4"
           >
-            Spell Name
+            Spell
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
@@ -189,187 +193,131 @@ export function SpellTable() {
         cell: ({ row }) => {
           const spell = row.original;
           const name = generateSpellName(spell, runeNameConfig);
-          const isEditing = editingNameSpellId === spell.id;
+          const isEditingName = editingNameSpellId === spell.id;
+          const isEditingSummary = editingSummarySpellId === spell.id;
           const hasCustomName = spell.customName && spell.customName.trim();
+          const hasSummary = spell.summary && spell.summary.trim();
 
-          if (isEditing) {
-            return (
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={editingNameValue}
-                  onChange={(e) => setEditingNameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+          return (
+            <div className="flex flex-col gap-1 py-1">
+              {/* Spell Name */}
+              {isEditingName ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={editingNameValue}
+                    onChange={(e) => setEditingNameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateSpellCustomName(spell.id, editingNameValue.trim());
+                        setEditingNameSpellId(null);
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingNameSpellId(null);
+                      }
+                    }}
+                    onBlur={() => {
                       updateSpellCustomName(spell.id, editingNameValue.trim());
                       setEditingNameSpellId(null);
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingNameSpellId(null);
-                    }
-                  }}
-                  onBlur={() => {
-                    updateSpellCustomName(spell.id, editingNameValue.trim());
-                    setEditingNameSpellId(null);
-                  }}
-                  className="bg-dark-700 border border-arcane-500/50 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-arcane-500 w-full"
-                  autoFocus
-                  placeholder="Leave empty for auto-name"
-                />
-                <button
-                  onClick={() => {
-                    updateSpellCustomName(spell.id, editingNameValue.trim());
-                    setEditingNameSpellId(null);
-                  }}
-                  className="p-1 text-green-400 hover:text-green-300"
-                >
-                  <Check className="h-4 w-4" />
-                </button>
-              </div>
-            );
-          }
-
-          return (
-            <div 
-              className="group flex items-center gap-1 cursor-pointer"
-              onClick={() => {
-                setEditingNameSpellId(spell.id);
-                setEditingNameValue(spell.customName || '');
-              }}
-            >
-              <span className={`font-medium ${
-                spell.status === 'dud' 
-                  ? 'text-slate-500 line-through' 
-                  : spell.status === 'favorite'
-                  ? 'text-yellow-300'
-                  : 'text-slate-200'
-              }`}>
-                {name}
-              </span>
-              {hasCustomName && (
-                <span className="text-arcane-400 text-xs ml-1" title="Custom name">✎</span>
-              )}
-              <Pencil className="h-3 w-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'circleBase',
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="-ml-4"
-          >
-            Base
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-        cell: ({ row }) => (
-          <Badge variant="base">{row.getValue('circleBase')}</Badge>
-        ),
-        filterFn: 'equals',
-      },
-      {
-        accessorKey: 'primaryRune',
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="-ml-4"
-          >
-            Primary
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        ),
-        cell: ({ row }) => (
-          <Badge variant="primary">{row.getValue('primaryRune')}</Badge>
-        ),
-        filterFn: 'equals',
-      },
-      {
-        accessorKey: 'modifierRunes',
-        header: 'Modifiers',
-        cell: ({ row }) => {
-          const modifiers = row.getValue('modifierRunes') as string[];
-          if (modifiers.length === 0) {
-            return <span className="text-slate-500">-</span>;
-          }
-          return (
-            <div className="flex flex-wrap gap-1">
-              {modifiers.map((mod) => (
-                <Badge key={mod} variant="modifier">
-                  {mod}
-                </Badge>
-              ))}
-            </div>
-          );
-        },
-        filterFn: (row, columnId, filterValue) => {
-          if (!filterValue || filterValue === 'all') return true;
-          const modifiers = row.getValue(columnId) as string[];
-          if (filterValue === 'none') return modifiers.length === 0;
-          return modifiers.includes(filterValue);
-        },
-      },
-      {
-        accessorKey: 'controlRune',
-        header: 'Control',
-        cell: ({ row }) => {
-          const control = row.getValue('controlRune') as string | null;
-          if (!control) {
-            return <span className="text-slate-500">-</span>;
-          }
-          return <Badge variant="control">{control}</Badge>;
-        },
-        filterFn: (row, columnId, filterValue) => {
-          if (!filterValue || filterValue === 'all') return true;
-          const control = row.getValue(columnId) as string | null;
-          if (filterValue === 'none') return !control;
-          return control === filterValue;
-        },
-      },
-      {
-        id: 'tags',
-        header: 'Tags',
-        cell: ({ row }) => {
-          const spell = row.original;
-          return (
-            <div className="flex flex-wrap items-center gap-1">
-              {spell.tags.map((tag) => (
-                <span 
-                  key={tag} 
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-dark-600 text-slate-300"
-                >
-                  {tag}
+                    }}
+                    className="bg-dark-700 border border-arcane-500/50 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-arcane-500 w-full max-w-xs"
+                    autoFocus
+                    placeholder="Leave empty for auto-name"
+                  />
                   <button
-                    onClick={() => updateSpellTags(spell.id, spell.tags.filter(t => t !== tag))}
-                    className="hover:text-red-400"
+                    onClick={() => {
+                      updateSpellCustomName(spell.id, editingNameValue.trim());
+                      setEditingNameSpellId(null);
+                    }}
+                    className="p-1 text-green-400 hover:text-green-300"
                   >
-                    <X className="h-3 w-3" />
+                    <Check className="h-4 w-4" />
                   </button>
-                </span>
-              ))}
-              <Select
-                value=""
-                onValueChange={(value) => {
-                  if (value && !spell.tags.includes(value)) {
-                    updateSpellTags(spell.id, [...spell.tags, value]);
-                  }
-                }}
-              >
-                <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
-                  <Plus className="h-3 w-3 text-slate-500 hover:text-slate-300" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTags.filter(t => !spell.tags.includes(t)).map((tag) => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                </div>
+              ) : (
+                <div 
+                  className="group flex items-center gap-1 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingNameSpellId(spell.id);
+                    setEditingNameValue(spell.customName || '');
+                  }}
+                >
+                  <span className={`font-medium ${
+                    spell.status === 'dud' 
+                      ? 'text-slate-500 line-through' 
+                      : spell.status === 'favorite'
+                      ? 'text-yellow-300'
+                      : 'text-slate-200'
+                  }`}>
+                    {name}
+                  </span>
+                  {hasCustomName && (
+                    <span className="text-arcane-400 text-xs ml-1" title="Custom name">✎</span>
+                  )}
+                  <Pencil className="h-3 w-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                </div>
+              )}
+
+              {/* Summary */}
+              {isEditingSummary ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={editingSummaryValue}
+                    onChange={(e) => setEditingSummaryValue(e.target.value.slice(0, 100))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateSpellSummary(spell.id, editingSummaryValue.trim());
+                        setEditingSummarySpellId(null);
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingSummarySpellId(null);
+                      }
+                    }}
+                    onBlur={() => {
+                      updateSpellSummary(spell.id, editingSummaryValue.trim());
+                      setEditingSummarySpellId(null);
+                    }}
+                    className="bg-dark-700 border border-dark-500/50 rounded px-2 py-0.5 text-xs text-slate-400 focus:outline-none focus:ring-1 focus:ring-arcane-500/50 w-full max-w-md"
+                    autoFocus
+                    placeholder="Add a short summary..."
+                    maxLength={100}
+                  />
+                  <span className="text-xs text-slate-600 min-w-[3ch]">{editingSummaryValue.length}/100</span>
+                  <button
+                    onClick={() => {
+                      updateSpellSummary(spell.id, editingSummaryValue.trim());
+                      setEditingSummarySpellId(null);
+                    }}
+                    className="p-0.5 text-green-400 hover:text-green-300"
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  className="group/summary flex items-center gap-1 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingSummarySpellId(spell.id);
+                    setEditingSummaryValue(spell.summary || '');
+                  }}
+                >
+                  {hasSummary ? (
+                    <span className="text-xs text-slate-500 italic line-clamp-1 max-w-md">
+                      {spell.summary}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-600 opacity-0 group-hover/summary:opacity-100 transition-opacity">
+                      + Add summary
+                    </span>
+                  )}
+                  {hasSummary && (
+                    <Pencil className="h-2.5 w-2.5 text-slate-600 opacity-0 group-hover/summary:opacity-100 transition-opacity flex-shrink-0" />
+                  )}
+                </div>
+              )}
             </div>
           );
         },
@@ -447,7 +395,7 @@ export function SpellTable() {
         },
       },
     ],
-    [deleteSpell, runeNameConfig, updateSpellStatus, updateSpellTags, availableTags, editingNameSpellId, editingNameValue, updateSpellCustomName, isDescriptionPanelOpen, isDescriptionEditMode, isDescriptionHoverMode]
+    [deleteSpell, runeNameConfig, updateSpellStatus, editingNameSpellId, editingNameValue, updateSpellCustomName, editingSummarySpellId, editingSummaryValue, updateSpellSummary, isDescriptionPanelOpen, isDescriptionEditMode, isDescriptionHoverMode]
   );
 
   const table = useReactTable({
@@ -499,7 +447,7 @@ export function SpellTable() {
     const rows = table.getFilteredRowModel().rows;
     
     // CSV header
-    const headers = ['Spell Name', 'Circle Base', 'Primary Rune', 'Modifiers', 'Control', 'Tags', 'Status'];
+    const headers = ['Spell Name', 'Summary', 'Circle Base', 'Primary Rune', 'Modifiers', 'Control', 'Tags', 'Status'];
     
     // CSV rows
     const csvRows = rows.map(row => {
@@ -507,6 +455,7 @@ export function SpellTable() {
       const name = generateSpellName(spell, runeNameConfig);
       return [
         `"${name}"`,
+        `"${spell.summary || ''}"`,
         `"${spell.circleBase}"`,
         `"${spell.primaryRune}"`,
         `"${spell.modifierRunes.join(', ')}"`,
@@ -678,101 +627,6 @@ export function SpellTable() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={
-              (table.getColumn('circleBase')?.getFilterValue() as string) ?? 'all'
-            }
-            onValueChange={(value) =>
-              table
-                .getColumn('circleBase')
-                ?.setFilterValue(value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Base" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Bases</SelectItem>
-              {runeLists.circleBases.map((base) => (
-                <SelectItem key={base} value={base}>
-                  {base}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={
-              (table.getColumn('primaryRune')?.getFilterValue() as string) ?? 'all'
-            }
-            onValueChange={(value) =>
-              table
-                .getColumn('primaryRune')
-                ?.setFilterValue(value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Primary" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Primary</SelectItem>
-              {runeLists.primaryRunes.map((rune) => (
-                <SelectItem key={rune} value={rune}>
-                  {rune}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={
-              (table.getColumn('modifierRunes')?.getFilterValue() as string) ??
-              'all'
-            }
-            onValueChange={(value) =>
-              table
-                .getColumn('modifierRunes')
-                ?.setFilterValue(value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Modifier" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Modifiers</SelectItem>
-              <SelectItem value="none">No Modifier</SelectItem>
-              {runeLists.modifierRunes.map((rune) => (
-                <SelectItem key={rune} value={rune}>
-                  {rune}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={
-              (table.getColumn('controlRune')?.getFilterValue() as string) ?? 'all'
-            }
-            onValueChange={(value) =>
-              table
-                .getColumn('controlRune')
-                ?.setFilterValue(value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Control" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Controls</SelectItem>
-              <SelectItem value="none">No Control</SelectItem>
-              {runeLists.controlRunes.map((rune) => (
-                <SelectItem key={rune} value={rune}>
-                  {rune}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X className="mr-1 h-4 w-4" />
@@ -923,15 +777,10 @@ export function SpellTable() {
                         clearTimeout(hoverPreviewTimeout.current);
                       }
                       setHoveredSpell(spell);
-                      setHoverPosition({ x: e.clientX, y: e.clientY });
+                      setHoverRowBounds(e.currentTarget.getBoundingClientRect());
                       hoverPreviewTimeout.current = setTimeout(() => {
                         setShowPreview(true);
                       }, 500);
-                    }}
-                    onMouseMove={(e) => {
-                      if (hoveredSpell?.id === spell.id) {
-                        setHoverPosition({ x: e.clientX, y: e.clientY });
-                      }
                     }}
                     onMouseLeave={() => {
                       if (hoverPreviewTimeout.current) {
@@ -939,6 +788,7 @@ export function SpellTable() {
                       }
                       setShowPreview(false);
                       setHoveredSpell(null);
+                      setHoverRowBounds(null);
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -1036,7 +886,7 @@ export function SpellTable() {
       <SpellCardPreview
         spell={hoveredSpell}
         runeNameConfig={runeNameConfig}
-        position={hoverPosition}
+        rowBounds={hoverRowBounds}
         isVisible={showPreview && !isDescriptionPanelOpen}
       />
     </div>

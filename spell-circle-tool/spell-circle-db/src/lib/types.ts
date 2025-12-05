@@ -11,6 +11,7 @@ export interface SpellCombination {
   status: SpellStatus;
   description?: string;
   customName?: string;
+  summary?: string; // Short inline description (max ~100 chars)
 }
 
 export type RuneType = 'primary' | 'modifier' | 'control';

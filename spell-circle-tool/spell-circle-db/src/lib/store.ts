@@ -47,6 +47,7 @@ interface SpellStore {
   updateSpellStatus: (spellId: string, status: SpellStatus) => Promise<void>;
   updateSpellDescription: (spellId: string, description: string) => Promise<void>;
   updateSpellCustomName: (spellId: string, customName: string) => Promise<void>;
+  updateSpellSummary: (spellId: string, summary: string) => Promise<void>;
 
   // Tags management
   addTag: (tag: string) => Promise<void>;
@@ -542,6 +543,21 @@ export const useSpellStore = create<SpellStore>()((set, get) => ({
     if (!spell) return;
 
     const updatedSpell = { ...spell, customName };
+    set({
+      spells: state.spells.map(s => s.id === spellId ? updatedSpell : s),
+    });
+
+    await dbOperations.updateSpell(updatedSpell);
+  },
+
+  updateSpellSummary: async (spellId: string, summary: string) => {
+    const state = get();
+    const spell = state.spells.find(s => s.id === spellId);
+    if (!spell) return;
+
+    // Enforce ~100 character limit
+    const trimmedSummary = summary.slice(0, 100);
+    const updatedSpell = { ...spell, summary: trimmedSummary };
     set({
       spells: state.spells.map(s => s.id === spellId ? updatedSpell : s),
     });

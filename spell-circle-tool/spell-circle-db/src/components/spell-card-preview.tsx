@@ -9,14 +9,14 @@ import { Star, Scroll } from 'lucide-react';
 interface SpellCardPreviewProps {
   spell: SpellCombination | null;
   runeNameConfig: RuneNameConfig;
-  position: { x: number; y: number } | null;
+  rowBounds: DOMRect | null;
   isVisible: boolean;
 }
 
 export function SpellCardPreview({
   spell,
   runeNameConfig,
-  position,
+  rowBounds,
   isVisible,
 }: SpellCardPreviewProps) {
   const [shouldRender, setShouldRender] = useState(false);
@@ -31,24 +31,33 @@ export function SpellCardPreview({
     }
   }, [isVisible]);
 
-  if (!shouldRender || !spell || !position) return null;
+  if (!shouldRender || !spell || !rowBounds) return null;
 
   const spellName = generateSpellName(spell, runeNameConfig);
   const hasCustomName = spell.customName && spell.customName.trim();
 
-  // Calculate position to keep card in viewport
+  // Calculate position to keep card in viewport, anchored to the row
   const cardWidth = 320;
   const cardHeight = 280;
   const padding = 20;
+  const gap = 12; // Gap between row and card
   
-  let left = position.x + 20;
-  let top = position.y - cardHeight / 2;
+  // Position to the right of the row by default
+  let left = rowBounds.right + gap;
+  // Vertically center the card relative to the row
+  let top = rowBounds.top + (rowBounds.height / 2) - (cardHeight / 2);
 
   // Adjust if card would go off screen
   if (typeof window !== 'undefined') {
+    // If card would overflow right edge, position to the left of the row
     if (left + cardWidth > window.innerWidth - padding) {
-      left = position.x - cardWidth - 20;
+      left = rowBounds.left - cardWidth - gap;
     }
+    // If it would still overflow on the left, just stick to right edge of viewport
+    if (left < padding) {
+      left = window.innerWidth - cardWidth - padding;
+    }
+    // Clamp vertical position to viewport
     if (top < padding) {
       top = padding;
     }
