@@ -813,12 +813,32 @@ export function SpellTable() {
                               : 'rgba(180, 160, 130, 0.08)',
                             borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
                           }}
+                          onClick={() => setSelectedSpellId(isSelected ? null : spell.id)}
                           onMouseEnter={(e) => {
+                            // Hover background effect
                             if (!isSelected) {
                               e.currentTarget.style.background = 'linear-gradient(90deg, rgba(170, 145, 100, 0.18) 0%, rgba(190, 165, 120, 0.12) 50%, rgba(170, 145, 100, 0.18) 100%)';
                             }
+                            // Hover card preview
+                            if (hoverPreviewTimeout.current) {
+                              clearTimeout(hoverPreviewTimeout.current);
+                            }
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setHoveredSpell(spell);
+                            setHoverRowBounds({
+                              top: rect.top,
+                              left: rect.left,
+                              right: rect.right,
+                              bottom: rect.bottom,
+                              width: rect.width,
+                              height: rect.height,
+                            });
+                            hoverPreviewTimeout.current = setTimeout(() => {
+                              setShowPreview(true);
+                            }, 300);
                           }}
                           onMouseLeave={(e) => {
+                            // Reset hover background
                             if (!isSelected) {
                               e.currentTarget.style.background = spell.status === 'favorite'
                                 ? 'linear-gradient(90deg, rgba(200, 170, 100, 0.15) 0%, rgba(220, 190, 130, 0.08) 50%, rgba(200, 170, 100, 0.15) 100%)'
@@ -826,34 +846,14 @@ export function SpellTable() {
                                 ? 'transparent' 
                                 : 'rgba(180, 160, 130, 0.08)';
                             }
+                            // Hide hover card preview
+                            if (hoverPreviewTimeout.current) {
+                              clearTimeout(hoverPreviewTimeout.current);
+                            }
+                            setShowPreview(false);
+                            setHoveredSpell(null);
+                            setHoverRowBounds(null);
                           }}
-                          onClick={() => setSelectedSpellId(isSelected ? null : spell.id)}
-                    onMouseEnter={(e) => {
-                      if (hoverPreviewTimeout.current) {
-                        clearTimeout(hoverPreviewTimeout.current);
-                      }
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredSpell(spell);
-                      setHoverRowBounds({
-                        top: rect.top,
-                        left: rect.left,
-                        right: rect.right,
-                        bottom: rect.bottom,
-                        width: rect.width,
-                        height: rect.height,
-                      });
-                      hoverPreviewTimeout.current = setTimeout(() => {
-                        setShowPreview(true);
-                      }, 300);
-                    }}
-                    onMouseLeave={() => {
-                      if (hoverPreviewTimeout.current) {
-                        clearTimeout(hoverPreviewTimeout.current);
-                      }
-                      setShowPreview(false);
-                      setHoveredSpell(null);
-                      setHoverRowBounds(null);
-                    }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td 
