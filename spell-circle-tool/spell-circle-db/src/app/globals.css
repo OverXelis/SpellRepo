@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0a0e1a 100%);
+  min-height: 100vh;
+}
+
+/* Subtle glow effect for magical feel */
+.glow {
+  box-shadow: 0 0 20px rgba(0, 149, 255, 0.15);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(0, 149, 255, 0.5);
+}
+
+/* Scrollbar styling for dark mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a2234;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #243047;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0077cc;
+}
