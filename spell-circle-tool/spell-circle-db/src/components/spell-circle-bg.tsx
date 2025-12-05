@@ -121,6 +121,24 @@ export function SpellCircleBg() {
       <div className="particle" style={{ top: '80%', left: '20%', animationDelay: '5s' }} />
       <div className="particle" style={{ top: '15%', left: '75%', animationDelay: '6s' }} />
       <div className="particle" style={{ top: '50%', left: '95%', animationDelay: '7s' }} />
+
+      {/* Candle flicker light effects */}
+      <div className="candle-light candle-light-left" />
+      <div className="candle-light candle-light-right" />
+      
+      {/* Additional ambient light - top corners */}
+      <div 
+        className="fixed top-0 left-0 w-[400px] h-[400px] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.03) 0%, transparent 60%)',
+        }}
+      />
+      <div 
+        className="fixed top-0 right-0 w-[400px] h-[400px] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at top right, rgba(0, 149, 255, 0.03) 0%, transparent 60%)',
+        }}
+      />
     </div>
   );
 }

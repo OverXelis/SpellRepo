@@ -22,6 +22,8 @@ import {
 import { Undo2, Pencil, Trash2, X, Check } from 'lucide-react';
 import { NamingConfig } from './naming-config';
 import { TagStatistics } from './tag-statistics';
+import { toast } from '@/lib/toast-store';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 export function RuneInputForm() {
   const [runeType, setRuneType] = useState<RuneType>('primary');
@@ -90,15 +92,15 @@ export function RuneInputForm() {
 
     // Check for duplicates
     if (runeType === 'primary' && runeLists.primaryRunes.includes(runeName.trim())) {
-      alert(`Primary Rune "${runeName}" already exists.`);
+      toast.warning(`Primary Rune "${runeName}" already exists.`);
       return;
     }
     if (runeType === 'modifier' && runeLists.modifierRunes.includes(runeName.trim())) {
-      alert(`Modifier Rune "${runeName}" already exists.`);
+      toast.warning(`Modifier Rune "${runeName}" already exists.`);
       return;
     }
     if (runeType === 'control' && runeLists.controlRunes.includes(runeName.trim())) {
-      alert(`Control Rune "${runeName}" already exists.`);
+      toast.warning(`Control Rune "${runeName}" already exists.`);
       return;
     }
 
@@ -454,7 +456,7 @@ export function RuneInputForm() {
           </div>
 
           <div className="pt-2 text-xs text-slate-400">
-            Total combinations in database: <strong className="text-arcane-400">{spells.length}</strong>
+            Total combinations in database: <strong className="text-arcane-400"><AnimatedCounter value={spells.length} /></strong>
           </div>
         </div>
       </div>

@@ -42,6 +42,9 @@ import {
   Check
 } from 'lucide-react';
 import { SpellDescriptionPanel } from '@/components/spell-description-panel';
+import { SpellCardPreview } from '@/components/spell-card-preview';
+import { EmptyState } from '@/components/empty-state';
+import { toast } from '@/lib/toast-store';
 
 export function SpellTable() {
   const { 
@@ -85,6 +88,15 @@ export function SpellTable() {
   // Tag editing state
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editingTagValue, setEditingTagValue] = useState('');
+
+  // Row selection state
+  const [selectedSpellId, setSelectedSpellId] = useState<string | null>(null);
+
+  // Hover preview state
+  const [hoveredSpell, setHoveredSpell] = useState<SpellCombination | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const hoverPreviewTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Filter spells by status and tags, then apply default status sorting
   const filteredSpells = useMemo(() => {
@@ -525,9 +537,9 @@ export function SpellTable() {
       const content = event.target?.result as string;
       const success = await importData(content);
       if (success) {
-        alert('Database imported successfully!');
+        toast.success('Database imported successfully!');
       } else {
-        alert('Failed to import database. Please check the file format.');
+        toast.error('Failed to import database. Please check the file format.');
       }
     };
     reader.readAsText(file);
@@ -895,13 +907,39 @@ export function SpellTable() {
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row, index) => {
                 const spell = row.original;
+                const isSelected = selectedSpellId === spell.id;
                 return (
                   <tr 
                     key={row.id} 
-                    className={`table-row-animate table-row-alt transition-colors duration-150 ${
+                    className={`table-row-animate table-row-alt transition-colors duration-150 cursor-pointer ${
                       spell.status === 'dud' ? 'opacity-50' : ''
-                    } ${spell.status === 'favorite' ? 'bg-gold-900/5' : ''}`}
+                    } ${spell.status === 'favorite' ? 'bg-gold-900/5' : ''} ${
+                      isSelected ? 'row-selected' : ''
+                    }`}
                     style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+                    onClick={() => setSelectedSpellId(isSelected ? null : spell.id)}
+                    onMouseEnter={(e) => {
+                      if (hoverPreviewTimeout.current) {
+                        clearTimeout(hoverPreviewTimeout.current);
+                      }
+                      setHoveredSpell(spell);
+                      setHoverPosition({ x: e.clientX, y: e.clientY });
+                      hoverPreviewTimeout.current = setTimeout(() => {
+                        setShowPreview(true);
+                      }, 500);
+                    }}
+                    onMouseMove={(e) => {
+                      if (hoveredSpell?.id === spell.id) {
+                        setHoverPosition({ x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (hoverPreviewTimeout.current) {
+                        clearTimeout(hoverPreviewTimeout.current);
+                      }
+                      setShowPreview(false);
+                      setHoveredSpell(null);
+                    }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3 text-sm text-slate-300">
@@ -916,13 +954,8 @@ export function SpellTable() {
               })
             ) : (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center text-slate-400"
-                >
-                  {spells.length === 0
-                    ? 'No spells yet. Add a Primary Rune to generate combinations.'
-                    : 'No spells match your filters.'}
+                <td colSpan={columns.length}>
+                  <EmptyState type={spells.length === 0 ? 'no-spells' : 'no-results'} />
                 </td>
               </tr>
             )}
@@ -997,6 +1030,14 @@ export function SpellTable() {
             setIsDescriptionHoverMode(false);
           }
         }}
+      />
+
+      {/* Spell Card Hover Preview */}
+      <SpellCardPreview
+        spell={hoveredSpell}
+        runeNameConfig={runeNameConfig}
+        position={hoverPosition}
+        isVisible={showPreview && !isDescriptionPanelOpen}
       />
     </div>
   );

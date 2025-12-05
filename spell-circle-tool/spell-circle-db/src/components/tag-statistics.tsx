@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useSpellStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, BarChart3, Tag, Star } from 'lucide-react';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 export function TagStatistics() {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,11 +113,14 @@ export function TagStatistics() {
         <div className="flex items-center justify-between">
           <span className="text-slate-400 text-sm font-philosopher">Total Spells</span>
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-cinzel font-bold text-arcane-400">{stats.totalSpells}</span>
+            <AnimatedCounter 
+              value={stats.totalSpells} 
+              className="text-2xl font-cinzel font-bold text-arcane-400"
+            />
             {stats.totalFavorites > 0 && (
               <span className="flex items-center gap-1 text-sm text-yellow-400">
                 <Star className="h-3 w-3 fill-current" />
-                {stats.totalFavorites}
+                <AnimatedCounter value={stats.totalFavorites} />
               </span>
             )}
           </div>

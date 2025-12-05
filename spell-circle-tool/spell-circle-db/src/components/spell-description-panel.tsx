@@ -78,7 +78,7 @@ export function SpellDescriptionPanel({
       {/* Backdrop for click-outside close - only show when not in hover mode */}
       {!isHoverMode && (
         <div 
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
