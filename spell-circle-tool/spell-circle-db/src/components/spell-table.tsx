@@ -23,18 +23,139 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SpellCombination } from '@/lib/types';
-import { ArrowUpDown, Trash2, X, Download, Upload } from 'lucide-react';
+import type { SpellCombination, SpellStatus } from '@/lib/types';
+import { generateSpellName } from '@/lib/spell-name-generator';
+import { 
+  ArrowUpDown, 
+  Trash2, 
+  X, 
+  Download, 
+  Upload, 
+  Star, 
+  StarOff,
+  XCircle,
+  FileSpreadsheet,
+  Plus,
+  Tag
+} from 'lucide-react';
 
 export function SpellTable() {
-  const { spells, runeLists, deleteSpell, clearAllSpells, exportData, importData } = useSpellStore();
+  const { 
+    spells, 
+    runeLists, 
+    availableTags,
+    runeNameConfig,
+    deleteSpell, 
+    clearAllSpells, 
+    exportData, 
+    importData,
+    updateSpellStatus,
+    updateSpellTags,
+    addTag,
+  } = useSpellStore();
+  
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [newTag, setNewTag] = useState('');
+  const [showNewTagInput, setShowNewTagInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter spells by status and tags
+  const filteredSpells = useMemo(() => {
+    return spells.filter(spell => {
+      // Status filter
+      if (statusFilter !== 'all' && spell.status !== statusFilter) {
+        return false;
+      }
+      // Tag filter
+      if (tagFilter !== 'all') {
+        if (tagFilter === 'untagged') {
+          return spell.tags.length === 0;
+        }
+        return spell.tags.includes(tagFilter);
+      }
+      return true;
+    });
+  }, [spells, statusFilter, tagFilter]);
 
   const columns = useMemo<ColumnDef<SpellCombination>[]>(
     () => [
+      {
+        id: 'status',
+        header: '',
+        cell: ({ row }) => {
+          const spell = row.original;
+          return (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => updateSpellStatus(
+                  spell.id, 
+                  spell.status === 'favorite' ? 'normal' : 'favorite'
+                )}
+                className={`p-1 rounded transition-colors ${
+                  spell.status === 'favorite' 
+                    ? 'text-yellow-400 hover:text-yellow-300' 
+                    : 'text-slate-600 hover:text-yellow-400'
+                }`}
+                title={spell.status === 'favorite' ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                {spell.status === 'favorite' ? (
+                  <Star className="h-4 w-4 fill-current" />
+                ) : (
+                  <StarOff className="h-4 w-4" />
+                )}
+              </button>
+              <button
+                onClick={() => updateSpellStatus(
+                  spell.id, 
+                  spell.status === 'dud' ? 'normal' : 'dud'
+                )}
+                className={`p-1 rounded transition-colors ${
+                  spell.status === 'dud' 
+                    ? 'text-red-400 hover:text-red-300' 
+                    : 'text-slate-600 hover:text-red-400'
+                }`}
+                title={spell.status === 'dud' ? 'Remove dud marking' : 'Mark as dud'}
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        },
+        size: 70,
+      },
+      {
+        id: 'spellName',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="-ml-4"
+          >
+            Spell Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        accessorFn: (row) => generateSpellName(row, runeNameConfig),
+        cell: ({ row }) => {
+          const spell = row.original;
+          const name = generateSpellName(spell, runeNameConfig);
+          return (
+            <span className={`font-medium ${
+              spell.status === 'dud' 
+                ? 'text-slate-500 line-through' 
+                : spell.status === 'favorite'
+                ? 'text-yellow-300'
+                : 'text-slate-200'
+            }`}>
+              {name}
+            </span>
+          );
+        },
+      },
       {
         accessorKey: 'circleBase',
         header: ({ column }) => (
@@ -43,7 +164,7 @@ export function SpellTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className="-ml-4"
           >
-            Circle Base
+            Base
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
@@ -60,7 +181,7 @@ export function SpellTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className="-ml-4"
           >
-            Primary Rune
+            Primary
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
@@ -112,6 +233,50 @@ export function SpellTable() {
         },
       },
       {
+        id: 'tags',
+        header: 'Tags',
+        cell: ({ row }) => {
+          const spell = row.original;
+          return (
+            <div className="flex flex-wrap items-center gap-1">
+              {spell.tags.map((tag) => (
+                <span 
+                  key={tag} 
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-dark-600 text-slate-300"
+                >
+                  {tag}
+                  <button
+                    onClick={() => updateSpellTags(spell.id, spell.tags.filter(t => t !== tag))}
+                    className="hover:text-red-400"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              <Select
+                value=""
+                onValueChange={(value) => {
+                  if (value && !spell.tags.includes(value)) {
+                    updateSpellTags(spell.id, [...spell.tags, value]);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
+                  <Plus className="h-3 w-3 text-slate-500 hover:text-slate-300" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTags.filter(t => !spell.tags.includes(t)).map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        },
+      },
+      {
         id: 'actions',
         header: '',
         cell: ({ row }) => (
@@ -126,11 +291,11 @@ export function SpellTable() {
         ),
       },
     ],
-    [deleteSpell]
+    [deleteSpell, runeNameConfig, updateSpellStatus, updateSpellTags, availableTags]
   );
 
   const table = useReactTable({
-    data: spells,
+    data: filteredSpells,
     columns,
     state: {
       sorting,
@@ -154,9 +319,11 @@ export function SpellTable() {
   const clearFilters = () => {
     setGlobalFilter('');
     setColumnFilters([]);
+    setStatusFilter('all');
+    setTagFilter('all');
   };
 
-  const hasActiveFilters = globalFilter || columnFilters.length > 0;
+  const hasActiveFilters = globalFilter || columnFilters.length > 0 || statusFilter !== 'all' || tagFilter !== 'all';
 
   const handleExport = async () => {
     const data = await exportData();
@@ -165,6 +332,40 @@ export function SpellTable() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `spell-circle-db-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = () => {
+    // Get the currently filtered/displayed spells
+    const rows = table.getFilteredRowModel().rows;
+    
+    // CSV header
+    const headers = ['Spell Name', 'Circle Base', 'Primary Rune', 'Modifiers', 'Control', 'Tags', 'Status'];
+    
+    // CSV rows
+    const csvRows = rows.map(row => {
+      const spell = row.original;
+      const name = generateSpellName(spell, runeNameConfig);
+      return [
+        `"${name}"`,
+        `"${spell.circleBase}"`,
+        `"${spell.primaryRune}"`,
+        `"${spell.modifierRunes.join(', ')}"`,
+        `"${spell.controlRune || ''}"`,
+        `"${spell.tags.join(', ')}"`,
+        `"${spell.status}"`,
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `spell-circle-db-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -193,18 +394,41 @@ export function SpellTable() {
     }
   };
 
-  return (
-    <div className="rounded-lg border border-dark-600 bg-dark-800 shadow-lg glow">
-      <div className="border-b border-dark-600 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-slate-100">
-            Spell Database
-            <span className="ml-2 text-sm font-normal text-slate-400">
-              ({table.getFilteredRowModel().rows.length} of {spells.length})
-            </span>
-          </h2>
+  const handleAddTag = () => {
+    if (newTag.trim()) {
+      addTag(newTag.trim());
+      setNewTag('');
+      setShowNewTagInput(false);
+    }
+  };
 
-          <div className="flex gap-2">
+  // Stats
+  const favoriteCount = spells.filter(s => s.status === 'favorite').length;
+  const dudCount = spells.filter(s => s.status === 'dud').length;
+
+  return (
+    <div className="rounded-xl border border-dark-500/50 bg-dark-800/90 shadow-xl glow backdrop-blur-sm spellbook-page card-depth">
+      <div className="border-b border-dark-600/50 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-cinzel font-semibold text-slate-100 flex items-center gap-2">
+              <span className="text-arcane-400">✦</span>
+              Spell Database
+              <span className="ml-2 text-sm font-philosopher font-normal text-slate-400">
+                ({table.getFilteredRowModel().rows.length} of {spells.length})
+              </span>
+            </h2>
+            <div className="flex gap-4 mt-2 text-xs text-slate-500 font-philosopher">
+              <span className="flex items-center gap-1">
+                <Star className="h-3 w-3 text-gold-400 star-twinkle" /> {favoriteCount} favorites
+              </span>
+              <span className="flex items-center gap-1">
+                <XCircle className="h-3 w-3 text-red-400" /> {dudCount} duds
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -212,7 +436,17 @@ export function SpellTable() {
               disabled={spells.length === 0}
             >
               <Download className="mr-2 h-4 w-4" />
-              Export
+              JSON
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={filteredSpells.length === 0}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              CSV
             </Button>
 
             <input
@@ -261,6 +495,33 @@ export function SpellTable() {
             className="max-w-xs"
           />
 
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="favorite">⭐ Favorites</SelectItem>
+              <SelectItem value="dud">❌ Duds</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Tags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tags</SelectItem>
+              <SelectItem value="untagged">Untagged</SelectItem>
+              {availableTags.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select
             value={
               (table.getColumn('circleBase')?.getFilterValue() as string) ?? 'all'
@@ -271,8 +532,8 @@ export function SpellTable() {
                 ?.setFilterValue(value === 'all' ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Circle Base" />
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Base" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Bases</SelectItem>
@@ -294,8 +555,8 @@ export function SpellTable() {
                 ?.setFilterValue(value === 'all' ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Primary Rune" />
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Primary" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Primary</SelectItem>
@@ -318,7 +579,7 @@ export function SpellTable() {
                 ?.setFilterValue(value === 'all' ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Modifier" />
             </SelectTrigger>
             <SelectContent>
@@ -342,7 +603,7 @@ export function SpellTable() {
                 ?.setFilterValue(value === 'all' ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Control" />
             </SelectTrigger>
             <SelectContent>
@@ -363,18 +624,58 @@ export function SpellTable() {
             </Button>
           )}
         </div>
+
+        {/* Tag Management */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-slate-500 flex items-center gap-1">
+            <Tag className="h-3 w-3" /> Available tags:
+          </span>
+          {availableTags.map((tag) => (
+            <span key={tag} className="text-xs px-2 py-0.5 rounded bg-dark-600 text-slate-400">
+              {tag}
+            </span>
+          ))}
+          {showNewTagInput ? (
+            <div className="flex items-center gap-1">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="New tag"
+                className="h-6 w-24 text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddTag();
+                  if (e.key === 'Escape') setShowNewTagInput(false);
+                }}
+                autoFocus
+              />
+              <button onClick={handleAddTag} className="text-green-400 hover:text-green-300">
+                <Plus className="h-4 w-4" />
+              </button>
+              <button onClick={() => setShowNewTagInput(false)} className="text-slate-400 hover:text-slate-300">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setShowNewTagInput(true)}
+              className="text-xs text-arcane-400 hover:text-arcane-300 flex items-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Add tag
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-dark-700">
+          <thead className="sticky-header bg-dark-700/95 backdrop-blur-sm">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-sm font-medium text-slate-400"
+                    className="px-4 py-4 text-left text-sm font-philosopher font-medium text-slate-400 border-b border-dark-600/50"
                   >
                     {header.isPlaceholder
                       ? null
@@ -387,20 +688,29 @@ export function SpellTable() {
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-dark-700">
+          <tbody className="divide-y divide-dark-700/50">
             {table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-dark-700/50">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm text-slate-300">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              table.getRowModel().rows.map((row, index) => {
+                const spell = row.original;
+                return (
+                  <tr 
+                    key={row.id} 
+                    className={`table-row-animate table-row-alt transition-colors duration-150 ${
+                      spell.status === 'dud' ? 'opacity-50' : ''
+                    } ${spell.status === 'favorite' ? 'bg-gold-900/5' : ''}`}
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3 text-sm text-slate-300">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td
@@ -418,7 +728,7 @@ export function SpellTable() {
       </div>
 
       {/* Pagination */}
-      {spells.length > 0 && (
+      {filteredSpells.length > 0 && (
         <div className="flex items-center justify-between border-t border-dark-600 px-4 py-3">
           <div className="text-sm text-slate-400">
             Page {table.getState().pagination.pageIndex + 1} of{' '}

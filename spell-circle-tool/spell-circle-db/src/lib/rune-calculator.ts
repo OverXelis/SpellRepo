@@ -31,6 +31,8 @@ function createSpell(
     modifierRunes: [...modifiers].sort(),
     controlRune: control,
     createdAt: Date.now(),
+    tags: [],
+    status: 'normal',
   };
 }
 
@@ -216,51 +218,150 @@ export function generateForNewControl(
 }
 
 /**
- * Calculate how many combinations a new primary rune would generate.
+ * Calculate how many NEW combinations a new primary rune would generate.
+ * Checks against existing spells to exclude duplicates.
  */
-export function calculatePrimaryCombinationCount(runeLists: RuneLists): number {
+export function calculatePrimaryCombinationCount(
+  runeLists: RuneLists,
+  newPrimary: string,
+  existingSpells: SpellCombination[]
+): number {
+  const existingKeys = new Set(
+    existingSpells.map((s) =>
+      canonicalKey(s.circleBase, s.primaryRune, s.modifierRunes, s.controlRune)
+    )
+  );
+
+  let count = 0;
   const { circleBases, modifierRunes, controlRunes } = runeLists;
-  const numBases = circleBases.length;
-  const numMods = modifierRunes.length;
-  const numControls = controlRunes.length;
 
-  // Per circle base:
-  // 1 (none) + numMods (single mod) + C(numMods,2) (mod pairs) + numControls (control only) + numMods*numControls (mod+control)
-  const modPairs = (numMods * (numMods - 1)) / 2;
-  const perBase = 1 + numMods + modPairs + numControls + numMods * numControls;
+  for (const circleBase of circleBases) {
+    // 1) No modifier, no control
+    if (!existingKeys.has(canonicalKey(circleBase, newPrimary, [], null))) {
+      count++;
+    }
 
-  return numBases * perBase;
+    // 2) Single modifiers
+    for (const m of modifierRunes) {
+      if (!existingKeys.has(canonicalKey(circleBase, newPrimary, [m], null))) {
+        count++;
+      }
+    }
+
+    // 3) Modifier pairs (unordered)
+    for (let i = 0; i < modifierRunes.length; i++) {
+      for (let j = i + 1; j < modifierRunes.length; j++) {
+        const m1 = modifierRunes[i];
+        const m2 = modifierRunes[j];
+        if (!existingKeys.has(canonicalKey(circleBase, newPrimary, [m1, m2], null))) {
+          count++;
+        }
+      }
+    }
+
+    // 4) Control only
+    for (const c of controlRunes) {
+      if (!existingKeys.has(canonicalKey(circleBase, newPrimary, [], c))) {
+        count++;
+      }
+    }
+
+    // 5) Modifier plus control
+    for (const m of modifierRunes) {
+      for (const c of controlRunes) {
+        if (!existingKeys.has(canonicalKey(circleBase, newPrimary, [m], c))) {
+          count++;
+        }
+      }
+    }
+  }
+
+  return count;
 }
 
 /**
- * Calculate how many combinations a new modifier rune would generate.
+ * Calculate how many NEW combinations a new modifier rune would generate.
+ * Checks against existing spells to exclude duplicates.
  */
-export function calculateModifierCombinationCount(runeLists: RuneLists): number {
+export function calculateModifierCombinationCount(
+  runeLists: RuneLists,
+  newModifier: string,
+  existingSpells: SpellCombination[]
+): number {
+  const existingKeys = new Set(
+    existingSpells.map((s) =>
+      canonicalKey(s.circleBase, s.primaryRune, s.modifierRunes, s.controlRune)
+    )
+  );
+
+  let count = 0;
   const { circleBases, primaryRunes, modifierRunes, controlRunes } = runeLists;
-  const numBases = circleBases.length;
-  const numPrimaries = primaryRunes.length;
-  const numMods = modifierRunes.length;
-  const numControls = controlRunes.length;
 
-  // Per primary per base:
-  // 1 (single new mod) + numMods (pair with each existing mod) + numControls (new mod + each control)
-  const perPrimaryPerBase = 1 + numMods + numControls;
+  // Include the new modifier in the list for pairing
+  const allModifiers = modifierRunes.includes(newModifier)
+    ? modifierRunes
+    : [...modifierRunes, newModifier];
 
-  return numBases * numPrimaries * perPrimaryPerBase;
+  for (const primary of primaryRunes) {
+    for (const circleBase of circleBases) {
+      // A. Single modifier M_new, no control
+      if (!existingKeys.has(canonicalKey(circleBase, primary, [newModifier], null))) {
+        count++;
+      }
+
+      // B. Modifier pairs [M_new, M_old] for each other modifier
+      for (const mOld of allModifiers) {
+        if (mOld === newModifier) continue;
+        if (!existingKeys.has(canonicalKey(circleBase, primary, [newModifier, mOld], null))) {
+          count++;
+        }
+      }
+
+      // C. Modifier plus control [M_new] + [C]
+      for (const c of controlRunes) {
+        if (!existingKeys.has(canonicalKey(circleBase, primary, [newModifier], c))) {
+          count++;
+        }
+      }
+    }
+  }
+
+  return count;
 }
 
 /**
- * Calculate how many combinations a new control rune would generate.
+ * Calculate how many NEW combinations a new control rune would generate.
+ * Checks against existing spells to exclude duplicates.
  */
-export function calculateControlCombinationCount(runeLists: RuneLists): number {
+export function calculateControlCombinationCount(
+  runeLists: RuneLists,
+  newControl: string,
+  existingSpells: SpellCombination[]
+): number {
+  const existingKeys = new Set(
+    existingSpells.map((s) =>
+      canonicalKey(s.circleBase, s.primaryRune, s.modifierRunes, s.controlRune)
+    )
+  );
+
+  let count = 0;
   const { circleBases, primaryRunes, modifierRunes } = runeLists;
-  const numBases = circleBases.length;
-  const numPrimaries = primaryRunes.length;
-  const numMods = modifierRunes.length;
 
-  // Per primary per base:
-  // 1 (control only) + numMods (each mod + new control)
-  const perPrimaryPerBase = 1 + numMods;
+  for (const primary of primaryRunes) {
+    for (const circleBase of circleBases) {
+      // A. Control only [C_new], no modifiers
+      if (!existingKeys.has(canonicalKey(circleBase, primary, [], newControl))) {
+        count++;
+      }
 
-  return numBases * numPrimaries * perPrimaryPerBase;
+      // B. Modifier plus control [M] + [C_new]
+      for (const m of modifierRunes) {
+        if (!existingKeys.has(canonicalKey(circleBase, primary, [m], newControl))) {
+          count++;
+        }
+      }
+    }
+  }
+
+  return count;
 }
