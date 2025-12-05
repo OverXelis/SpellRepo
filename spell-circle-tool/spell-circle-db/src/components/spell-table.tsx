@@ -36,8 +36,12 @@ import {
   XCircle,
   FileSpreadsheet,
   Plus,
-  Tag
+  Tag,
+  FileText,
+  Pencil,
+  Check
 } from 'lucide-react';
+import { SpellDescriptionPanel } from '@/components/spell-description-panel';
 
 export function SpellTable() {
   const { 
@@ -52,6 +56,10 @@ export function SpellTable() {
     updateSpellStatus,
     updateSpellTags,
     addTag,
+    updateSpellDescription,
+    updateSpellCustomName,
+    removeTag,
+    editTag,
   } = useSpellStore();
   
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -63,9 +71,24 @@ export function SpellTable() {
   const [showNewTagInput, setShowNewTagInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter spells by status and tags
+  // Description panel state
+  const [descriptionPanelSpell, setDescriptionPanelSpell] = useState<SpellCombination | null>(null);
+  const [isDescriptionPanelOpen, setIsDescriptionPanelOpen] = useState(false);
+  const [isDescriptionEditMode, setIsDescriptionEditMode] = useState(false);
+  const [isDescriptionHoverMode, setIsDescriptionHoverMode] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Inline name editing state
+  const [editingNameSpellId, setEditingNameSpellId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
+
+  // Tag editing state
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editingTagValue, setEditingTagValue] = useState('');
+
+  // Filter spells by status and tags, then apply default status sorting
   const filteredSpells = useMemo(() => {
-    return spells.filter(spell => {
+    const filtered = spells.filter(spell => {
       // Status filter
       if (statusFilter !== 'all' && spell.status !== statusFilter) {
         return false;
@@ -79,7 +102,18 @@ export function SpellTable() {
       }
       return true;
     });
-  }, [spells, statusFilter, tagFilter]);
+
+    // Apply default status-based sorting (favorites first, duds last)
+    // Only when no explicit column sorting is active
+    if (sorting.length === 0) {
+      return [...filtered].sort((a, b) => {
+        const statusOrder = { favorite: 0, normal: 1, dud: 2 };
+        return statusOrder[a.status] - statusOrder[b.status];
+      });
+    }
+
+    return filtered;
+  }, [spells, statusFilter, tagFilter, sorting]);
 
   const columns = useMemo<ColumnDef<SpellCombination>[]>(
     () => [
@@ -143,16 +177,68 @@ export function SpellTable() {
         cell: ({ row }) => {
           const spell = row.original;
           const name = generateSpellName(spell, runeNameConfig);
+          const isEditing = editingNameSpellId === spell.id;
+          const hasCustomName = spell.customName && spell.customName.trim();
+
+          if (isEditing) {
+            return (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={editingNameValue}
+                  onChange={(e) => setEditingNameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      updateSpellCustomName(spell.id, editingNameValue.trim());
+                      setEditingNameSpellId(null);
+                    }
+                    if (e.key === 'Escape') {
+                      setEditingNameSpellId(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    updateSpellCustomName(spell.id, editingNameValue.trim());
+                    setEditingNameSpellId(null);
+                  }}
+                  className="bg-dark-700 border border-arcane-500/50 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-arcane-500 w-full"
+                  autoFocus
+                  placeholder="Leave empty for auto-name"
+                />
+                <button
+                  onClick={() => {
+                    updateSpellCustomName(spell.id, editingNameValue.trim());
+                    setEditingNameSpellId(null);
+                  }}
+                  className="p-1 text-green-400 hover:text-green-300"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          }
+
           return (
-            <span className={`font-medium ${
-              spell.status === 'dud' 
-                ? 'text-slate-500 line-through' 
-                : spell.status === 'favorite'
-                ? 'text-yellow-300'
-                : 'text-slate-200'
-            }`}>
-              {name}
-            </span>
+            <div 
+              className="group flex items-center gap-1 cursor-pointer"
+              onClick={() => {
+                setEditingNameSpellId(spell.id);
+                setEditingNameValue(spell.customName || '');
+              }}
+            >
+              <span className={`font-medium ${
+                spell.status === 'dud' 
+                  ? 'text-slate-500 line-through' 
+                  : spell.status === 'favorite'
+                  ? 'text-yellow-300'
+                  : 'text-slate-200'
+              }`}>
+                {name}
+              </span>
+              {hasCustomName && (
+                <span className="text-arcane-400 text-xs ml-1" title="Custom name">✎</span>
+              )}
+              <Pencil className="h-3 w-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+            </div>
           );
         },
       },
@@ -279,19 +365,77 @@ export function SpellTable() {
       {
         id: 'actions',
         header: '',
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => await deleteSpell(row.original.id)}
-            className="h-8 w-8 text-slate-400 hover:text-red-400"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        ),
+        cell: ({ row }) => {
+          const spell = row.original;
+          const hasDescription = spell.description && spell.description.trim();
+          
+          return (
+            <div className="flex items-center gap-1">
+              <div
+                className="relative"
+                onMouseEnter={() => {
+                  if (hasDescription && !isDescriptionPanelOpen) {
+                    // Clear any pending close timeout
+                    if (hoverTimeoutRef.current) {
+                      clearTimeout(hoverTimeoutRef.current);
+                      hoverTimeoutRef.current = null;
+                    }
+                    setDescriptionPanelSpell(spell);
+                    setIsDescriptionPanelOpen(true);
+                    setIsDescriptionEditMode(false);
+                    setIsDescriptionHoverMode(true);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (isDescriptionHoverMode) {
+                    // Small delay to allow moving to panel
+                    hoverTimeoutRef.current = setTimeout(() => {
+                      if (isDescriptionHoverMode) {
+                        setIsDescriptionPanelOpen(false);
+                        setDescriptionPanelSpell(null);
+                        setIsDescriptionHoverMode(false);
+                      }
+                    }, 200);
+                  }
+                }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Clear any pending close timeout
+                    if (hoverTimeoutRef.current) {
+                      clearTimeout(hoverTimeoutRef.current);
+                      hoverTimeoutRef.current = null;
+                    }
+                    setDescriptionPanelSpell(spell);
+                    setIsDescriptionPanelOpen(true);
+                    setIsDescriptionEditMode(true);
+                    setIsDescriptionHoverMode(false);
+                  }}
+                  className={`p-1.5 rounded transition-colors ${
+                    hasDescription 
+                      ? 'text-arcane-400 hover:text-arcane-300' 
+                      : 'text-slate-600 hover:text-slate-400'
+                  }`}
+                  title={hasDescription ? 'View/Edit notes' : 'Add notes'}
+                >
+                  <FileText className={`h-4 w-4 ${hasDescription ? 'fill-arcane-400/20' : ''}`} />
+                </button>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => await deleteSpell(spell.id)}
+                className="h-8 w-8 text-slate-400 hover:text-red-400"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        },
       },
     ],
-    [deleteSpell, runeNameConfig, updateSpellStatus, updateSpellTags, availableTags]
+    [deleteSpell, runeNameConfig, updateSpellStatus, updateSpellTags, availableTags, editingNameSpellId, editingNameValue, updateSpellCustomName, isDescriptionPanelOpen, isDescriptionEditMode, isDescriptionHoverMode]
   );
 
   const table = useReactTable({
@@ -631,9 +775,68 @@ export function SpellTable() {
             <Tag className="h-3 w-3" /> Available tags:
           </span>
           {availableTags.map((tag) => (
-            <span key={tag} className="text-xs px-2 py-0.5 rounded bg-dark-600 text-slate-400">
-              {tag}
-            </span>
+            editingTag === tag ? (
+              <div key={tag} className="flex items-center gap-1">
+                <Input
+                  value={editingTagValue}
+                  onChange={(e) => setEditingTagValue(e.target.value)}
+                  className="h-6 w-24 text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      editTag(tag, editingTagValue);
+                      setEditingTag(null);
+                    }
+                    if (e.key === 'Escape') {
+                      setEditingTag(null);
+                    }
+                  }}
+                  autoFocus
+                />
+                <button 
+                  onClick={() => {
+                    editTag(tag, editingTagValue);
+                    setEditingTag(null);
+                  }} 
+                  className="text-green-400 hover:text-green-300"
+                >
+                  <Check className="h-3 w-3" />
+                </button>
+                <button 
+                  onClick={() => setEditingTag(null)} 
+                  className="text-slate-400 hover:text-slate-300"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <span 
+                key={tag} 
+                className="group inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-dark-600 text-slate-400"
+              >
+                {tag}
+                <button
+                  onClick={() => {
+                    setEditingTag(tag);
+                    setEditingTagValue(tag);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-arcane-400 transition-opacity"
+                  title="Edit tag"
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Remove tag "${tag}"? This will remove it from all spells.`)) {
+                      removeTag(tag);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-opacity"
+                  title="Delete tag"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            )
           ))}
           {showNewTagInput ? (
             <div className="flex items-center gap-1">
@@ -754,6 +957,47 @@ export function SpellTable() {
           </div>
         </div>
       )}
+
+      {/* Description Panel */}
+      <SpellDescriptionPanel
+        spell={descriptionPanelSpell}
+        spellName={descriptionPanelSpell ? generateSpellName(descriptionPanelSpell, runeNameConfig) : ''}
+        isOpen={isDescriptionPanelOpen}
+        isEditMode={isDescriptionEditMode}
+        isHoverMode={isDescriptionHoverMode}
+        onClose={() => {
+          setIsDescriptionPanelOpen(false);
+          setDescriptionPanelSpell(null);
+          setIsDescriptionEditMode(false);
+          setIsDescriptionHoverMode(false);
+        }}
+        onSave={async (description) => {
+          if (descriptionPanelSpell) {
+            await updateSpellDescription(descriptionPanelSpell.id, description);
+            // Update the local reference to show the new description
+            setDescriptionPanelSpell({
+              ...descriptionPanelSpell,
+              description,
+            });
+          }
+        }}
+        onEditModeChange={setIsDescriptionEditMode}
+        onMouseEnter={() => {
+          // Clear any pending close timeout when entering panel
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+          }
+        }}
+        onMouseLeave={() => {
+          // Close panel when leaving in hover mode
+          if (isDescriptionHoverMode) {
+            setIsDescriptionPanelOpen(false);
+            setDescriptionPanelSpell(null);
+            setIsDescriptionHoverMode(false);
+          }
+        }}
+      />
     </div>
   );
 }

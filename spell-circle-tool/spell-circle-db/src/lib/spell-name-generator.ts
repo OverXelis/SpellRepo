@@ -3,6 +3,7 @@ import { getModifierPairKey } from './types';
 
 /**
  * Generates a display name for a spell based on its runes and the naming configuration.
+ * If a customName is set on the spell, it takes priority over auto-generation.
  * 
  * Format: "{ModifierName(s)} {PrimaryName} ({ControlName})"
  * 
@@ -16,6 +17,11 @@ export function generateSpellName(
   spell: SpellCombination,
   config: RuneNameConfig
 ): string {
+  // If spell has a custom name set, use it instead of auto-generating
+  if (spell.customName && spell.customName.trim()) {
+    return spell.customName.trim();
+  }
+
   const parts: string[] = [];
 
   // Get modifier portion

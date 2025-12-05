@@ -58,6 +58,19 @@ db.version(2).stores({
   });
 });
 
+db.version(3).stores({
+  spells: 'id, circleBase, primaryRune, createdAt, status',
+  batchHistory: 'id, timestamp',
+  config: 'id',
+  appSettings: 'id',
+}).upgrade(async tx => {
+  // Migrate existing spells to have description and customName fields
+  await tx.table('spells').toCollection().modify(spell => {
+    if (spell.description === undefined) spell.description = '';
+    if (spell.customName === undefined) spell.customName = '';
+  });
+});
+
 // Default configs
 const DEFAULT_RUNE_LISTS_CONFIG: RuneListsConfig = {
   id: 'main',
@@ -100,11 +113,13 @@ export const dbOperations = {
     const spells = await db.spells.toArray();
     const batchHistory = await db.batchHistory.orderBy('timestamp').toArray();
 
-    // Ensure all spells have tags and status (migration safety)
+    // Ensure all spells have tags, status, description, and customName (migration safety)
     const migratedSpells = spells.map(spell => ({
       ...spell,
       tags: spell.tags ?? [],
       status: spell.status ?? 'normal' as SpellStatus,
+      description: spell.description ?? '',
+      customName: spell.customName ?? '',
     }));
 
     return {
@@ -231,6 +246,8 @@ export const dbOperations = {
         ...spell,
         tags: spell.tags ?? [],
         status: spell.status ?? 'normal',
+        description: spell.description ?? '',
+        customName: spell.customName ?? '',
       }));
 
       // Import new data

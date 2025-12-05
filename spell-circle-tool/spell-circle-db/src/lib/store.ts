@@ -45,10 +45,13 @@ interface SpellStore {
   // Spell management
   updateSpellTags: (spellId: string, tags: string[]) => Promise<void>;
   updateSpellStatus: (spellId: string, status: SpellStatus) => Promise<void>;
+  updateSpellDescription: (spellId: string, description: string) => Promise<void>;
+  updateSpellCustomName: (spellId: string, customName: string) => Promise<void>;
 
   // Tags management
   addTag: (tag: string) => Promise<void>;
   removeTag: (tag: string) => Promise<void>;
+  editTag: (oldTag: string, newTag: string) => Promise<void>;
 
   // Naming config
   updateRuneNameConfig: (config: RuneNameConfig) => Promise<void>;
@@ -520,6 +523,32 @@ export const useSpellStore = create<SpellStore>()((set, get) => ({
     await dbOperations.updateSpell(updatedSpell);
   },
 
+  updateSpellDescription: async (spellId: string, description: string) => {
+    const state = get();
+    const spell = state.spells.find(s => s.id === spellId);
+    if (!spell) return;
+
+    const updatedSpell = { ...spell, description };
+    set({
+      spells: state.spells.map(s => s.id === spellId ? updatedSpell : s),
+    });
+
+    await dbOperations.updateSpell(updatedSpell);
+  },
+
+  updateSpellCustomName: async (spellId: string, customName: string) => {
+    const state = get();
+    const spell = state.spells.find(s => s.id === spellId);
+    if (!spell) return;
+
+    const updatedSpell = { ...spell, customName };
+    set({
+      spells: state.spells.map(s => s.id === spellId ? updatedSpell : s),
+    });
+
+    await dbOperations.updateSpell(updatedSpell);
+  },
+
   // Tags management
   addTag: async (tag: string) => {
     const state = get();
@@ -539,6 +568,33 @@ export const useSpellStore = create<SpellStore>()((set, get) => ({
     const updatedSpells = state.spells.map(s => ({
       ...s,
       tags: s.tags.filter(t => t !== tag),
+    }));
+
+    set({ 
+      availableTags: updatedTags,
+      spells: updatedSpells,
+    });
+
+    await Promise.all([
+      dbOperations.updateAvailableTags(updatedTags),
+      dbOperations.updateSpells(updatedSpells),
+    ]);
+  },
+
+  editTag: async (oldTag: string, newTag: string) => {
+    const state = get();
+    const trimmedNew = newTag.trim();
+    
+    // Don't edit if empty or same name or already exists
+    if (!trimmedNew || oldTag === trimmedNew || state.availableTags.includes(trimmedNew)) return;
+
+    // Update the available tags list
+    const updatedTags = state.availableTags.map(t => t === oldTag ? trimmedNew : t);
+    
+    // Update all spells that have this tag
+    const updatedSpells = state.spells.map(s => ({
+      ...s,
+      tags: s.tags.map(t => t === oldTag ? trimmedNew : t),
     }));
 
     set({ 

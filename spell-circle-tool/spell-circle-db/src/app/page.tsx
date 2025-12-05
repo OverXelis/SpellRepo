@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { RuneInputForm } from '@/components/rune-input-form';
 import { SpellTable } from '@/components/spell-table';
 import { SpellCircleBg } from '@/components/spell-circle-bg';
+import { DecorativeBooks } from '@/components/decorative-books';
 import { useSpellStore } from '@/lib/store';
 
 export default function Home() {
@@ -39,6 +40,7 @@ export default function Home() {
   return (
     <>
       <SpellCircleBg />
+      <DecorativeBooks />
       <main className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-16">
         {/* Header Section */}
         <header className="mb-12 text-center section-animate">

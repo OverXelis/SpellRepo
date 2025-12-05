@@ -9,6 +9,8 @@ export interface SpellCombination {
   createdAt: number;
   tags: string[];
   status: SpellStatus;
+  description?: string;
+  customName?: string;
 }
 
 export type RuneType = 'primary' | 'modifier' | 'control';

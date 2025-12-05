@@ -21,6 +21,7 @@ import {
 } from '@/lib/rune-calculator';
 import { Undo2, Pencil, Trash2, X, Check } from 'lucide-react';
 import { NamingConfig } from './naming-config';
+import { TagStatistics } from './tag-statistics';
 
 export function RuneInputForm() {
   const [runeType, setRuneType] = useState<RuneType>('primary');
@@ -460,6 +461,9 @@ export function RuneInputForm() {
 
       {/* Naming Configuration Panel */}
       <NamingConfig />
+
+      {/* Tag Statistics Panel */}
+      <TagStatistics />
     </div>
   );
 }
