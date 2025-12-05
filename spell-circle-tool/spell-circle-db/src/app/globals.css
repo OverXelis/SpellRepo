@@ -7,6 +7,18 @@ body {
     "Helvetica Neue", Arial, sans-serif;
   background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0a0e1a 100%);
   min-height: 100vh;
+  color: #e2e8f0; /* slate-200 default text */
+}
+
+/* Force input colors to override browser defaults */
+input, textarea, select {
+  background-color: #111827 !important; /* dark-800 */
+  color: #f1f5f9 !important; /* slate-100 */
+  border-color: #243047 !important; /* dark-600 */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
 }
 
 /* Subtle glow effect for magical feel */

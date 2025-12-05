@@ -79,8 +79,8 @@ export function RuneInputForm() {
     setShowPreview(true);
   };
 
-  const handleConfirm = () => {
-    const count = addRune(runeType, runeName.trim());
+  const handleConfirm = async () => {
+    const count = await addRune(runeType, runeName.trim());
 
     setLastResult({
       type: runeType,
@@ -96,8 +96,8 @@ export function RuneInputForm() {
     setShowPreview(false);
   };
 
-  const handleUndo = () => {
-    const undone = undoLastBatch();
+  const handleUndo = async () => {
+    const undone = await undoLastBatch();
     if (undone) {
       setLastResult(null);
     }
@@ -126,7 +126,7 @@ export function RuneInputForm() {
                 <SelectItem value="control">Control Rune</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               {runeType === 'primary' &&
                 'Generates all combinations for this primary with every circle base.'}
               {runeType === 'modifier' &&
@@ -148,9 +148,14 @@ export function RuneInputForm() {
           </div>
 
           {runeName.trim() && expectedCount > 0 && (
-            <p className="text-sm text-slate-400">
-              Will generate <strong className="text-arcane-400">{expectedCount}</strong> combinations.
-            </p>
+            <div className="rounded-md border border-arcane-600/50 bg-arcane-900/20 px-4 py-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-arcane-300">✦</span>
+                <span className="text-slate-200">
+                  Will generate <strong className="text-arcane-400 text-lg">{expectedCount}</strong> combinations
+                </span>
+              </div>
+            </div>
           )}
 
           {(runeType === 'modifier' || runeType === 'control') &&
@@ -188,7 +193,7 @@ export function RuneInputForm() {
               rune will create:
             </p>
             <p className="mt-2 text-2xl font-bold text-arcane-400">{expectedCount} combinations</p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               {runeType === 'primary' && `Across ${runeLists.circleBases.length} circle bases`}
               {runeType === 'modifier' && `Across ${runeLists.primaryRunes.length} primary runes and ${runeLists.circleBases.length} bases`}
               {runeType === 'control' && `Across ${runeLists.primaryRunes.length} primary runes and ${runeLists.circleBases.length} bases`}
@@ -227,13 +232,13 @@ export function RuneInputForm() {
 
       {lastBatch && (
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleUndo}
-          className="mt-2 w-full text-slate-400 hover:text-slate-200"
+          className="mt-3 w-full border-amber-600/50 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 hover:text-amber-200 hover:border-amber-500"
         >
           <Undo2 className="mr-2 h-4 w-4" />
-          Undo: Remove {lastBatch.spellIds.length} combinations from "{lastBatch.runeName}"
+          Undo Combinations from {lastBatch.runeName}?
         </Button>
       )}
 
@@ -242,7 +247,7 @@ export function RuneInputForm() {
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 w-20">Bases:</span>
+            <span className="text-xs font-medium text-slate-400 w-20">Bases:</span>
             {runeLists.circleBases.map((base) => (
               <Badge key={base} variant="base">
                 {base}
@@ -251,7 +256,7 @@ export function RuneInputForm() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 w-20">Primary:</span>
+            <span className="text-xs font-medium text-slate-400 w-20">Primary:</span>
             {runeLists.primaryRunes.length > 0 ? (
               runeLists.primaryRunes.map((rune) => (
                 <Badge key={rune} variant="primary">
@@ -259,12 +264,12 @@ export function RuneInputForm() {
                 </Badge>
               ))
             ) : (
-              <span className="text-xs text-slate-500 italic">None yet</span>
+              <span className="text-xs text-slate-400 italic">None yet</span>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 w-20">Modifiers:</span>
+            <span className="text-xs font-medium text-slate-400 w-20">Modifiers:</span>
             {runeLists.modifierRunes.map((rune) => (
               <Badge key={rune} variant="modifier">
                 {rune}
@@ -273,7 +278,7 @@ export function RuneInputForm() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 w-20">Controls:</span>
+            <span className="text-xs font-medium text-slate-400 w-20">Controls:</span>
             {runeLists.controlRunes.map((rune) => (
               <Badge key={rune} variant="control">
                 {rune}
@@ -282,7 +287,7 @@ export function RuneInputForm() {
           </div>
         </div>
 
-        <div className="pt-2 text-xs text-slate-500">
+        <div className="pt-2 text-xs text-slate-400">
           Total combinations in database: <strong className="text-arcane-400">{spells.length}</strong>
         </div>
       </div>

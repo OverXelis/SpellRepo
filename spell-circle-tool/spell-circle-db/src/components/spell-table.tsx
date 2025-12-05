@@ -75,7 +75,7 @@ export function SpellTable() {
         cell: ({ row }) => {
           const modifiers = row.getValue('modifierRunes') as string[];
           if (modifiers.length === 0) {
-            return <span className="text-slate-600">-</span>;
+            return <span className="text-slate-500">-</span>;
           }
           return (
             <div className="flex flex-wrap gap-1">
@@ -100,7 +100,7 @@ export function SpellTable() {
         cell: ({ row }) => {
           const control = row.getValue('controlRune') as string | null;
           if (!control) {
-            return <span className="text-slate-600">-</span>;
+            return <span className="text-slate-500">-</span>;
           }
           return <Badge variant="control">{control}</Badge>;
         },
@@ -118,8 +118,8 @@ export function SpellTable() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => deleteSpell(row.original.id)}
-            className="h-8 w-8 text-slate-500 hover:text-red-400"
+            onClick={async () => await deleteSpell(row.original.id)}
+            className="h-8 w-8 text-slate-400 hover:text-red-400"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -158,8 +158,8 @@ export function SpellTable() {
 
   const hasActiveFilters = globalFilter || columnFilters.length > 0;
 
-  const handleExport = () => {
-    const data = exportData();
+  const handleExport = async () => {
+    const data = await exportData();
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -176,9 +176,9 @@ export function SpellTable() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target?.result as string;
-      const success = importData(content);
+      const success = await importData(content);
       if (success) {
         alert('Database imported successfully!');
       } else {
@@ -199,7 +199,7 @@ export function SpellTable() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-slate-100">
             Spell Database
-            <span className="ml-2 text-sm font-normal text-slate-500">
+            <span className="ml-2 text-sm font-normal text-slate-400">
               ({table.getFilteredRowModel().rows.length} of {spells.length})
             </span>
           </h2>
@@ -235,13 +235,13 @@ export function SpellTable() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (
                     confirm(
                       'Are you sure you want to clear all spells? This cannot be undone.'
                     )
                   ) {
-                    clearAllSpells();
+                    await clearAllSpells();
                   }
                 }}
               >
@@ -405,7 +405,7 @@ export function SpellTable() {
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-slate-500"
+                  className="px-4 py-12 text-center text-slate-400"
                 >
                   {spells.length === 0
                     ? 'No spells yet. Add a Primary Rune to generate combinations.'
@@ -420,7 +420,7 @@ export function SpellTable() {
       {/* Pagination */}
       {spells.length > 0 && (
         <div className="flex items-center justify-between border-t border-dark-600 px-4 py-3">
-          <div className="text-sm text-slate-500">
+          <div className="text-sm text-slate-400">
             Page {table.getState().pagination.pageIndex + 1} of{' '}
             {table.getPageCount()}
           </div>
