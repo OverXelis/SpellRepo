@@ -485,12 +485,15 @@ export function SpellTable() {
     const rows = table.getFilteredRowModel().rows;
     const spellsToExport = rows.map(row => row.original);
     
+    // Use the same format as the full database export for compatibility
     const exportObject = {
-      version: 1,
-      exportDate: new Date().toISOString(),
+      spells: spellsToExport,
+      runeLists: runeLists,
+      availableTags: availableTags,
+      runeNameConfig: runeNameConfig,
+      exportedAt: new Date().toISOString(),
       isFiltered: hasActiveFilters,
       spellCount: spellsToExport.length,
-      spells: spellsToExport,
     };
     
     const data = JSON.stringify(exportObject, null, 2);

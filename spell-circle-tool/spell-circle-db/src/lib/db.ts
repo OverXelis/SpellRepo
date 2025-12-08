@@ -233,9 +233,16 @@ export const dbOperations = {
   async importAll(jsonString: string): Promise<boolean> {
     try {
       const data = JSON.parse(jsonString);
-      if (!data.spells || !data.runeLists) {
+      
+      // Must have spells array
+      if (!data.spells || !Array.isArray(data.spells)) {
+        console.error('Import failed: No spells array found');
         return false;
       }
+
+      // Get current config to use as fallback if runeLists not in import
+      const currentConfig = await db.config.get('main');
+      const currentSettings = await db.appSettings.get('main') ?? DEFAULT_APP_SETTINGS;
 
       // Clear existing data
       await db.spells.clear();
@@ -248,24 +255,30 @@ export const dbOperations = {
         status: spell.status ?? 'normal',
         description: spell.description ?? '',
         customName: spell.customName ?? '',
+        summary: spell.summary ?? '',
       }));
 
       // Import new data
       await db.spells.bulkPut(migratedSpells);
-      await db.config.put({ id: 'main', runeLists: data.runeLists });
       
-      // Import app settings if present
-      if (data.availableTags || data.runeNameConfig) {
-        const currentSettings = await db.appSettings.get('main') ?? DEFAULT_APP_SETTINGS;
-        await db.appSettings.put({
-          id: 'main',
-          availableTags: data.availableTags ?? currentSettings.availableTags,
-          runeNameConfig: data.runeNameConfig ?? currentSettings.runeNameConfig,
-        });
+      // Use imported runeLists if available, otherwise keep current
+      if (data.runeLists) {
+        await db.config.put({ id: 'main', runeLists: data.runeLists });
+      } else if (!currentConfig) {
+        // Only set defaults if no config exists
+        await db.config.put(DEFAULT_RUNE_LISTS_CONFIG);
       }
+      
+      // Import app settings if present, merge with current
+      await db.appSettings.put({
+        id: 'main',
+        availableTags: data.availableTags ?? currentSettings.availableTags,
+        runeNameConfig: data.runeNameConfig ?? currentSettings.runeNameConfig,
+      });
 
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Import failed:', error);
       return false;
     }
   },
