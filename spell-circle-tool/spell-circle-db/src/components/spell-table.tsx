@@ -1043,6 +1043,7 @@ export function SpellTable() {
         isOpen={isDescriptionPanelOpen}
         isEditMode={isDescriptionEditMode}
         isHoverMode={isDescriptionHoverMode}
+        availableTags={availableTags}
         onClose={() => {
           setIsDescriptionPanelOpen(false);
           setDescriptionPanelSpell(null);
@@ -1056,6 +1057,16 @@ export function SpellTable() {
             setDescriptionPanelSpell({
               ...descriptionPanelSpell,
               description,
+            });
+          }
+        }}
+        onTagsChange={async (tags) => {
+          if (descriptionPanelSpell) {
+            await updateSpellTags(descriptionPanelSpell.id, tags);
+            // Update the local reference to show the new tags
+            setDescriptionPanelSpell({
+              ...descriptionPanelSpell,
+              tags,
             });
           }
         }}

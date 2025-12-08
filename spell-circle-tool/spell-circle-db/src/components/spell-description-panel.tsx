@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Save } from 'lucide-react';
+import { X, Save, Tag, Plus, Check } from 'lucide-react';
 import type { SpellCombination } from '@/lib/types';
 
 interface SpellDescriptionPanelProps {
@@ -11,8 +11,10 @@ interface SpellDescriptionPanelProps {
   isOpen: boolean;
   isEditMode: boolean;
   isHoverMode: boolean;
+  availableTags: string[];
   onClose: () => void;
   onSave: (description: string) => void;
+  onTagsChange: (tags: string[]) => void;
   onEditModeChange: (editMode: boolean) => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -24,21 +26,40 @@ export function SpellDescriptionPanel({
   isOpen,
   isEditMode,
   isHoverMode,
+  availableTags,
   onClose,
   onSave,
+  onTagsChange,
   onEditModeChange,
   onMouseEnter,
   onMouseLeave,
 }: SpellDescriptionPanelProps) {
   const [description, setDescription] = useState('');
+  const [spellTags, setSpellTags] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Sync description with spell when spell changes or panel opens
+  // Sync description and tags with spell when spell changes or panel opens
   useEffect(() => {
     if (spell) {
       setDescription(spell.description || '');
+      setSpellTags(spell.tags || []);
     }
-  }, [spell?.id, spell?.description, isOpen]);
+  }, [spell?.id, spell?.description, spell?.tags, isOpen]);
+
+  // Close tag dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setShowTagDropdown(false);
+      }
+    };
+    if (showTagDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTagDropdown]);
 
   // Focus textarea when entering edit mode
   useEffect(() => {
@@ -59,7 +80,9 @@ export function SpellDescriptionPanel({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      if (isEditMode) {
+      if (showTagDropdown) {
+        setShowTagDropdown(false);
+      } else if (isEditMode) {
         handleCancel();
       } else {
         onClose();
@@ -70,6 +93,24 @@ export function SpellDescriptionPanel({
       handleSave();
     }
   };
+
+  const handleAddTag = (tag: string) => {
+    if (!spellTags.includes(tag)) {
+      const newTags = [...spellTags, tag];
+      setSpellTags(newTags);
+      onTagsChange(newTags);
+    }
+    setShowTagDropdown(false);
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    const newTags = spellTags.filter(t => t !== tag);
+    setSpellTags(newTags);
+    onTagsChange(newTags);
+  };
+
+  // Get tags that aren't already assigned to this spell
+  const availableToAdd = availableTags.filter(tag => !spellTags.includes(tag));
 
   if (!isOpen || !spell) return null;
 
@@ -86,7 +127,7 @@ export function SpellDescriptionPanel({
       {/* Parchment Panel - positioned to the right of viewport */}
       <div 
         className={`
-          fixed right-[-24rem] top-20 h-auto max-h-[calc(100vh-10rem)] w-96 z-50
+          fixed right-0 top-20 h-auto max-h-[calc(100vh-10rem)] w-96 z-50
           transform transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
@@ -179,7 +220,130 @@ export function SpellDescriptionPanel({
           </div>
 
           {/* Content */}
-          <div className="relative p-4 overflow-y-auto max-h-[300px]">
+          <div className="relative p-4 overflow-y-auto max-h-[400px]">
+            {/* Tags Section */}
+            {!isHoverMode && (
+              <div className="mb-4">
+                <div 
+                  className="flex items-center gap-2 mb-2"
+                  style={{ color: '#6b4423' }}
+                >
+                  <Tag className="h-4 w-4" />
+                  <span className="text-sm font-medium">Tags</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 items-center">
+                  {/* Current Tags */}
+                  {spellTags.map(tag => (
+                    <span 
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: 'rgba(139, 90, 43, 0.2)',
+                        color: '#5c3d1e',
+                        border: '1px solid rgba(139, 90, 43, 0.3)',
+                      }}
+                    >
+                      {tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-0.5 p-0.5 rounded hover:bg-red-200/50 transition-colors"
+                        title={`Remove ${tag}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  
+                  {/* Add Tag Button */}
+                  {availableToAdd.length > 0 && (
+                    <div className="relative" ref={tagDropdownRef}>
+                      <button
+                        onClick={() => setShowTagDropdown(!showTagDropdown)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(139, 90, 43, 0.1)',
+                          color: '#8b5a2b',
+                          border: '1px dashed rgba(139, 90, 43, 0.4)',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 90, 43, 0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 90, 43, 0.1)'}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add Tag
+                      </button>
+                      
+                      {/* Dropdown */}
+                      {showTagDropdown && (
+                        <div 
+                          className="absolute top-full left-0 mt-1 z-10 min-w-[120px] rounded shadow-lg overflow-hidden"
+                          style={{
+                            backgroundColor: '#f5e6c8',
+                            border: '1px solid rgba(139, 90, 43, 0.4)',
+                          }}
+                        >
+                          {availableToAdd.map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => handleAddTag(tag)}
+                              className="w-full px-3 py-2 text-left text-xs font-medium transition-colors flex items-center gap-2"
+                              style={{ color: '#5c3d1e' }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 90, 43, 0.15)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <Check className="h-3 w-3 opacity-0" />
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Empty state */}
+                  {spellTags.length === 0 && availableToAdd.length === 0 && (
+                    <span 
+                      className="text-xs italic"
+                      style={{ color: '#8b7355' }}
+                    >
+                      No tags available
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Hover mode - show tags read-only */}
+            {isHoverMode && spellTags.length > 0 && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1">
+                  {spellTags.map(tag => (
+                    <span 
+                      key={tag}
+                      className="px-2 py-0.5 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: 'rgba(139, 90, 43, 0.15)',
+                        color: '#5c3d1e',
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notes Section Label */}
+            {!isHoverMode && (
+              <div 
+                className="flex items-center gap-2 mb-2"
+                style={{ color: '#6b4423' }}
+              >
+                <span className="text-sm font-medium">Notes</span>
+              </div>
+            )}
+
+            {/* Notes Content */}
             {isEditMode ? (
               <textarea
                 ref={textareaRef}
