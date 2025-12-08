@@ -70,6 +70,10 @@ export function SpellTable() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
+  const [circleBaseFilter, setCircleBaseFilter] = useState<string>('all');
+  const [primaryRuneFilter, setPrimaryRuneFilter] = useState<string>('all');
+  const [modifierRuneFilter, setModifierRuneFilter] = useState<string>('all');
+  const [controlRuneFilter, setControlRuneFilter] = useState<string>('all');
   const [newTag, setNewTag] = useState('');
   const [showNewTagInput, setShowNewTagInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +106,7 @@ export function SpellTable() {
   const [showPreview, setShowPreview] = useState(false);
   const hoverPreviewTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Filter spells by status and tags, then apply default status sorting
+  // Filter spells by status, tags, and runes, then apply default status sorting
   const filteredSpells = useMemo(() => {
     const filtered = spells.filter(spell => {
       // Status filter
@@ -112,9 +116,30 @@ export function SpellTable() {
       // Tag filter
       if (tagFilter !== 'all') {
         if (tagFilter === 'untagged') {
-          return spell.tags.length === 0;
+          if (spell.tags.length !== 0) return false;
+        } else if (!spell.tags.includes(tagFilter)) {
+          return false;
         }
-        return spell.tags.includes(tagFilter);
+      }
+      // Circle Base filter
+      if (circleBaseFilter !== 'all' && spell.circleBase !== circleBaseFilter) {
+        return false;
+      }
+      // Primary Rune filter
+      if (primaryRuneFilter !== 'all' && spell.primaryRune !== primaryRuneFilter) {
+        return false;
+      }
+      // Modifier Rune filter
+      if (modifierRuneFilter !== 'all' && !spell.modifierRunes.includes(modifierRuneFilter)) {
+        return false;
+      }
+      // Control Rune filter
+      if (controlRuneFilter !== 'all') {
+        if (controlRuneFilter === 'none' && spell.controlRune !== null) {
+          return false;
+        } else if (controlRuneFilter !== 'none' && spell.controlRune !== controlRuneFilter) {
+          return false;
+        }
       }
       return true;
     });
@@ -129,7 +154,7 @@ export function SpellTable() {
     }
 
     return filtered;
-  }, [spells, statusFilter, tagFilter, sorting]);
+  }, [spells, statusFilter, tagFilter, circleBaseFilter, primaryRuneFilter, modifierRuneFilter, controlRuneFilter, sorting]);
 
   const columns = useMemo<ColumnDef<SpellCombination>[]>(
     () => [
@@ -299,7 +324,7 @@ export function SpellTable() {
                       updateSpellSummary(spell.id, editingSummaryValue.trim());
                       setEditingSummarySpellId(null);
                     }}
-                    className="bg-parchment-100 border border-parchment-500/50 rounded px-2 py-1 text-base text-parchment-800 focus:outline-none focus:ring-1 focus:ring-parchment-600/50 w-full max-w-md font-caveat"
+                    className="bg-parchment-100 border border-parchment-500/50 rounded px-2 py-1 text-lg text-parchment-800 focus:outline-none focus:ring-1 focus:ring-parchment-600/50 w-full max-w-md font-caveat"
                     autoFocus
                     placeholder="Add a short summary..."
                     maxLength={100}
@@ -325,11 +350,11 @@ export function SpellTable() {
                   }}
                 >
                   {hasSummary ? (
-                    <span className="text-base text-parchment-700 line-clamp-1 max-w-md font-caveat" style={{ color: '#4a3d30' }}>
+                    <span className="text-lg text-parchment-700 line-clamp-1 max-w-md font-caveat" style={{ color: '#4a3d30' }}>
                       {spell.summary}
                     </span>
                   ) : (
-                    <span className="text-sm text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity font-caveat">
+                    <span className="text-base text-parchment-500 opacity-0 group-hover/summary:opacity-100 transition-opacity font-caveat">
                       + Add summary
                     </span>
                   )}
@@ -447,17 +472,34 @@ export function SpellTable() {
     setColumnFilters([]);
     setStatusFilter('all');
     setTagFilter('all');
+    setCircleBaseFilter('all');
+    setPrimaryRuneFilter('all');
+    setModifierRuneFilter('all');
+    setControlRuneFilter('all');
   };
 
-  const hasActiveFilters = globalFilter || columnFilters.length > 0 || statusFilter !== 'all' || tagFilter !== 'all';
+  const hasActiveFilters = globalFilter || columnFilters.length > 0 || statusFilter !== 'all' || tagFilter !== 'all' || circleBaseFilter !== 'all' || primaryRuneFilter !== 'all' || modifierRuneFilter !== 'all' || controlRuneFilter !== 'all';
 
   const handleExport = async () => {
-    const data = await exportData();
+    // Export filtered spells if filters are active, otherwise export all
+    const rows = table.getFilteredRowModel().rows;
+    const spellsToExport = rows.map(row => row.original);
+    
+    const exportObject = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      isFiltered: hasActiveFilters,
+      spellCount: spellsToExport.length,
+      spells: spellsToExport,
+    };
+    
+    const data = JSON.stringify(exportObject, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `spell-circle-db-${new Date().toISOString().split('T')[0]}.json`;
+    const suffix = hasActiveFilters ? '-filtered' : '';
+    a.download = `spell-circle-db${suffix}-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -560,10 +602,10 @@ export function SpellTable() {
               variant="outline"
               size="sm"
               onClick={handleExport}
-              disabled={spells.length === 0}
+              disabled={filteredSpells.length === 0}
             >
               <Download className="mr-2 h-4 w-4" />
-              JSON
+              JSON {hasActiveFilters && `(${table.getFilteredRowModel().rows.length})`}
             </Button>
 
             <Button
@@ -644,6 +686,63 @@ export function SpellTable() {
               {availableTags.map((tag) => (
                 <SelectItem key={tag} value={tag}>
                   {tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={circleBaseFilter} onValueChange={setCircleBaseFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Circle Base" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Bases</SelectItem>
+              {runeLists.circleBases.map((base) => (
+                <SelectItem key={base} value={base}>
+                  {base}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={primaryRuneFilter} onValueChange={setPrimaryRuneFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Primary" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Primary</SelectItem>
+              {runeLists.primaryRunes.map((rune) => (
+                <SelectItem key={rune} value={rune}>
+                  {rune}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={modifierRuneFilter} onValueChange={setModifierRuneFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Modifier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Modifiers</SelectItem>
+              {runeLists.modifierRunes.map((rune) => (
+                <SelectItem key={rune} value={rune}>
+                  {rune}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={controlRuneFilter} onValueChange={setControlRuneFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Control" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Control</SelectItem>
+              <SelectItem value="none">No Control</SelectItem>
+              {runeLists.controlRunes.map((rune) => (
+                <SelectItem key={rune} value={rune}>
+                  {rune}
                 </SelectItem>
               ))}
             </SelectContent>

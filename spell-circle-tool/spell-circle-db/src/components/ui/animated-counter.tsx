@@ -126,3 +126,4 @@ export function SimpleCounter({
   return <span className={`tabular-nums ${className}`}>{displayValue}</span>;
 }
 
+
