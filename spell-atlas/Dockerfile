@@ -11,6 +11,10 @@ FROM node:22-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Guard against an empty public/ dir -- git doesn't track empty directories,
+# so if it's ever emptied out again this keeps the later COPY from the
+# runner stage from failing.
+RUN mkdir -p ./public
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
