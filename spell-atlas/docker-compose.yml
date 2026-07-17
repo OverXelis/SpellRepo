@@ -1,0 +1,22 @@
+services:
+  spell-atlas:
+    build: .
+    # Or, once you've pushed an image to a registry:
+    # image: your-registry/spell-atlas:latest
+    container_name: spell-atlas
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-sonnet-5}
+      - APP_PASSWORD=${APP_PASSWORD}
+      - DATABASE_PATH=/data/spell-atlas.db
+    volumes:
+      # Point this at a real path on your NAS's storage pool so the
+      # database survives container recreation/updates, e.g. on a UGREEN
+      # NAS: /volume1/docker/spell-atlas/data:/data
+      - spell-atlas-data:/data
+
+volumes:
+  spell-atlas-data:
