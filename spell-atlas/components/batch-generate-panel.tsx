@@ -228,7 +228,9 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
         <h2 className="ui-panel-header">Contemplate meaning</h2>
         <p className="mt-1 text-sm text-foreground-muted">
           Like a mage meditating on the Dao, run batch generation here to fill in names, summaries, descriptions, and
-          tags for spells that still need them. Review the results in the table below before returning to the Builder.
+          tags for spells that still need them. The model is allowed to mark incompatible combinations as duds that
+          fizzle out rather than forcing every pairing into a functional spell. Review the results in the table below
+          before returning to the Builder.
         </p>
       </div>
 
