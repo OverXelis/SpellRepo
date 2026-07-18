@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
 import { removeRune, renameRune, updateDisplayName } from '@/lib/db/runes';
 import type { RuneKind } from '@/lib/core/types';
+import { withErrorHandling } from '@/lib/api-utils';
 
 function isRuneKind(value: string): value is RuneKind {
   return ['circleBase', 'primary', 'modifier', 'control'].includes(value);
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ kind: string; name: string }> }) {
+export const PATCH = withErrorHandling(async (request: NextRequest, { params }: { params: Promise<{ kind: string; name: string }> }) => {
   const { kind, name } = await params;
   if (!isRuneKind(kind)) return NextResponse.json({ error: 'Invalid rune kind' }, { status: 400 });
 
@@ -23,13 +24,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   return NextResponse.json({ success: true });
-}
+});
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ kind: string; name: string }> }) {
+export const DELETE = withErrorHandling(async (_request: NextRequest, { params }: { params: Promise<{ kind: string; name: string }> }) => {
   const { kind, name } = await params;
   if (!isRuneKind(kind)) return NextResponse.json({ error: 'Invalid rune kind' }, { status: 400 });
 
   const db = getDb();
   const result = removeRune(db, kind, decodeURIComponent(name));
   return NextResponse.json(result);
-}
+});

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
 import { searchSpells, type SearchFilters } from '@/lib/db/spells';
 import type { SpellStatus } from '@/lib/core/types';
+import { withErrorHandling } from '@/lib/api-utils';
 
 function parseFilters(params: URLSearchParams): SearchFilters {
   const filters: SearchFilters = {};
@@ -36,9 +37,9 @@ function parseFilters(params: URLSearchParams): SearchFilters {
   return filters;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const db = getDb();
   const filters = parseFilters(request.nextUrl.searchParams);
   const result = searchSpells(db, filters);
   return NextResponse.json(result);
-}
+});

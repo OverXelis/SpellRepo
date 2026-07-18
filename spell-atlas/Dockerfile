@@ -28,19 +28,25 @@ ENV HOSTNAME=0.0.0.0
 # Where the SQLite file lives inside the container -- mount a volume here.
 ENV DATABASE_PATH=/data/spell-atlas.db
 
-RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
-RUN mkdir -p /data && chown nextjs:nodejs /data
+RUN mkdir -p /data
 
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 # Standalone tracing can miss better-sqlite3's compiled binary -- copy it in
 # explicitly to be safe.
 COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 COPY --from=builder /app/lib/db/schema.sql ./lib/db/schema.sql
 
 VOLUME ["/data"]
-USER nextjs
+# Deliberately runs as root (rather than a fixed non-root uid) so that
+# /data can be freely a Docker-managed named volume *or* a bind mount to any
+# NAS shared folder without needing to chown the host path to match a
+# specific container uid first -- the single most common source of "can't
+# open database file" errors on NAS Docker setups. This app has no other
+# reason to need root; it's a tradeoff made specifically for painless
+# self-hosting on a private (Tailscale-only) network, not for
+# internet-facing deployments.
 EXPOSE 3000
 
 CMD ["node", "server.js"]

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
 import { exportAll } from '@/lib/db/export-import';
+import { withErrorHandling } from '@/lib/api-utils';
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   const db = getDb();
   const payload = exportAll(db);
   const body = JSON.stringify(payload, null, 2);
@@ -12,4 +13,4 @@ export async function GET() {
       'Content-Disposition': `attachment; filename="spell-atlas-${new Date().toISOString().split('T')[0]}.json"`,
     },
   });
-}
+});

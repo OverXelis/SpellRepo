@@ -5,6 +5,7 @@ import { ensureDefaultRunesSeeded } from '@/lib/db/naming';
 import { getTaxonomy } from '@/lib/db/taxonomy';
 import { buildSystemPrompt } from '@/lib/ai/system-prompt';
 import { CHAT_TOOLS, executeTool } from '@/lib/ai/tools';
+import { withErrorHandling } from '@/lib/api-utils';
 
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const MAX_TOOL_TURNS = 6;
@@ -20,7 +21,7 @@ export interface ToolTraceEntry {
   resultSummary: string;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: 'ANTHROPIC_API_KEY is not configured on the server. Set it as an environment variable.' },
@@ -95,4 +96,4 @@ export async function POST(request: NextRequest) {
       "I wasn't able to finish narrowing this down in the allotted number of lookups -- try asking a more specific question (e.g. mention a rune, tag, or circle base you have in mind).",
     toolTrace,
   });
-}
+});
