@@ -15,6 +15,5 @@ services:
     volumes:
       # Bind mount to a folder on your NAS pool so the database is easy to
       # find, back up, and snapshot. Create this folder on the NAS before
-      # first start (see README). If your pool is not volume1, change the
-      # left-hand path to match your UGREEN shared-folder layout.
-      - /volume1/dockerapps/appdata/spell-atlas:/data
+      # first start (see README).
+      - /volume2/dockerapps/appdata/spell-atlas:/data
