@@ -26,6 +26,10 @@ interface Props {
   runeLists: RuneLists;
   runeNameConfig: RuneNameConfig;
   runeMeanings: RuneMeaningConfig;
+  kinds: RuneKind[];
+  showAddForm?: boolean;
+  showModifierPairs?: boolean;
+  title?: string;
   onChanged: () => void;
 }
 
@@ -160,12 +164,7 @@ function RuneRow({
                 ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
                 : `Delete "${name}"? (0 spells affected)`}
             </span>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={busy || countLoading}
-              className="ui-btn-sm ui-btn-danger"
-            >
+            <button type="button" onClick={handleDelete} disabled={busy || countLoading} className="ui-btn-sm ui-btn-danger">
               Yes, delete
             </button>
             <button
@@ -197,8 +196,78 @@ function RuneRow({
   );
 }
 
-export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }: Props) {
-  const [kind, setKind] = useState<RuneKind>('primary');
+function RuneKindSection({
+  kind,
+  runeLists,
+  runeNameConfig,
+  runeMeanings,
+  onChanged,
+}: {
+  kind: RuneKind;
+  runeLists: RuneLists;
+  runeNameConfig: RuneNameConfig;
+  runeMeanings: RuneMeaningConfig;
+  onChanged: () => void;
+}) {
+  const names =
+    kind === 'circleBase'
+      ? runeLists.circleBases
+      : kind === 'primary'
+      ? runeLists.primaryRunes
+      : kind === 'modifier'
+      ? runeLists.modifierRunes
+      : runeLists.controlRunes;
+  const nameMap =
+    kind === 'primary'
+      ? runeNameConfig.primaryNames
+      : kind === 'modifier'
+      ? runeNameConfig.modifierNames
+      : kind === 'control'
+      ? runeNameConfig.controlNames
+      : {};
+  const meaningMap =
+    kind === 'circleBase'
+      ? runeMeanings.circleBaseMeanings
+      : kind === 'primary'
+      ? runeMeanings.primaryMeanings
+      : kind === 'modifier'
+      ? runeMeanings.modifierMeanings
+      : runeMeanings.controlMeanings;
+
+  return (
+    <div>
+      <h3 className="ui-label mb-2">
+        {KIND_LABEL[kind]} ({names.length})
+      </h3>
+      <div className="flex flex-col gap-2">
+        {names.length === 0 && <span className="text-xs italic text-foreground-subtle">none yet</span>}
+        {names.map((n) => (
+          <RuneRow
+            key={n}
+            kind={kind}
+            name={n}
+            displayName={nameMap[n] ?? ''}
+            meaning={meaningMap[n] ?? ''}
+            showDisplayName={kind !== 'circleBase'}
+            onChanged={onChanged}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function RunePanel({
+  runeLists,
+  runeNameConfig,
+  runeMeanings,
+  kinds,
+  showAddForm = false,
+  showModifierPairs = false,
+  title,
+  onChanged,
+}: Props) {
+  const [kind, setKind] = useState<RuneKind>(kinds[0] ?? 'primary');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
@@ -239,91 +308,83 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
 
   return (
     <div className="ui-panel space-y-4">
-      <h2 className="ui-panel-header">Add rune</h2>
-      <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
-        <select
-          value={kind}
-          onChange={(e) => setKind(e.target.value as RuneKind)}
-          className="ui-select-sm w-full sm:w-auto"
-        >
-          <option value="circleBase">Circle Base</option>
-          <option value="primary">Primary</option>
-          <option value="modifier">Modifier</option>
-          <option value="control">Control</option>
-        </select>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Rune name"
-          className="ui-input-sm flex-1"
-        />
-        <div className="flex gap-2">
-          <button type="submit" disabled={busy || !name.trim()} className="ui-btn-sm ui-btn-primary flex-1 sm:flex-none">
-            Generate
-          </button>
-          <button type="button" onClick={handleUndo} disabled={busy} className="ui-btn-sm ui-btn-secondary">
-            Undo last
-          </button>
-        </div>
-      </form>
-      {lastResult && <p className="text-xs text-foreground-muted">{lastResult}</p>}
+      {title && <h2 className="ui-panel-header">{title}</h2>}
 
-      <div className="space-y-4 border-t border-border-subtle pt-4">
-        {(['circleBase', 'primary', 'modifier', 'control'] as RuneKind[]).map((k) => {
-          const names =
-            k === 'circleBase' ? runeLists.circleBases : k === 'primary' ? runeLists.primaryRunes : k === 'modifier' ? runeLists.modifierRunes : runeLists.controlRunes;
-          const nameMap =
-            k === 'primary' ? runeNameConfig.primaryNames : k === 'modifier' ? runeNameConfig.modifierNames : k === 'control' ? runeNameConfig.controlNames : {};
-          const meaningMap =
-            k === 'circleBase'
-              ? runeMeanings.circleBaseMeanings
-              : k === 'primary'
-              ? runeMeanings.primaryMeanings
-              : k === 'modifier'
-              ? runeMeanings.modifierMeanings
-              : runeMeanings.controlMeanings;
-          return (
-            <div key={k}>
-              <h3 className="ui-label mb-2">
-                {KIND_LABEL[k]} ({names.length})
-              </h3>
-              <div className="flex flex-col gap-2">
-                {names.length === 0 && <span className="text-xs italic text-foreground-subtle">none yet</span>}
-                {names.map((n) => (
-                  <RuneRow
-                    key={n}
-                    kind={k}
-                    name={n}
-                    displayName={nameMap[n] ?? ''}
-                    meaning={meaningMap[n] ?? ''}
-                    showDisplayName={k !== 'circleBase'}
-                    onChanged={onChanged}
-                  />
-                ))}
-              </div>
+      {showAddForm && (
+        <>
+          <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as RuneKind)}
+              className="ui-select-sm w-full sm:w-auto"
+            >
+              <option value="circleBase">Circle Base</option>
+              <option value="primary">Primary</option>
+              <option value="modifier">Modifier</option>
+              <option value="control">Control</option>
+            </select>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Rune name"
+              className="ui-input-sm flex-1"
+            />
+            <div className="flex gap-2">
+              <button type="submit" disabled={busy || !name.trim()} className="ui-btn-sm ui-btn-primary flex-1 sm:flex-none">
+                Generate
+              </button>
+              <button type="button" onClick={handleUndo} disabled={busy} className="ui-btn-sm ui-btn-secondary">
+                Undo last
+              </button>
             </div>
-          );
-        })}
+          </form>
+          {lastResult && <p className="text-xs text-foreground-muted">{lastResult}</p>}
+        </>
+      )}
+
+      <div className={`space-y-4 ${showAddForm ? 'border-t border-border-subtle pt-4' : ''}`}>
+        {kinds.map((k) => (
+          <RuneKindSection
+            key={k}
+            kind={k}
+            runeLists={runeLists}
+            runeNameConfig={runeNameConfig}
+            runeMeanings={runeMeanings}
+            onChanged={onChanged}
+          />
+        ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowNaming((v) => !v)}
-        className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover"
-      >
-        {showNaming ? <ChevronDownIcon /> : <ChevronRightIcon />}
-        {showNaming ? 'Hide' : 'Show'} modifier pair names ({modifierPairs.length})
-      </button>
-      {showNaming && (
-        <div className="space-y-2 rounded-md border border-border-subtle bg-surface-raised p-3">
-          {modifierPairs.length === 0 && <p className="text-xs italic text-foreground-subtle">Add 2+ modifiers to create pairs</p>}
-          {modifierPairs.map((pairKey) => {
-            const [m1, m2] = parseModifierPairKey(pairKey);
-            return (
-              <PairNameRow key={pairKey} mod1={m1} mod2={m2} initial={runeNameConfig.modifierPairNames[pairKey] ?? ''} onChanged={onChanged} />
-            );
-          })}
-        </div>
+      {showModifierPairs && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowNaming((v) => !v)}
+            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover"
+          >
+            {showNaming ? <ChevronDownIcon /> : <ChevronRightIcon />}
+            {showNaming ? 'Hide' : 'Show'} modifier pair names ({modifierPairs.length})
+          </button>
+          {showNaming && (
+            <div className="space-y-2 rounded-md border border-border-subtle bg-surface-raised p-3">
+              {modifierPairs.length === 0 && (
+                <p className="text-xs italic text-foreground-subtle">Add 2+ modifiers to create pairs</p>
+              )}
+              {modifierPairs.map((pairKey) => {
+                const [m1, m2] = parseModifierPairKey(pairKey);
+                return (
+                  <PairNameRow
+                    key={pairKey}
+                    mod1={m1}
+                    mod2={m2}
+                    initial={runeNameConfig.modifierPairNames[pairKey] ?? ''}
+                    onChanged={onChanged}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

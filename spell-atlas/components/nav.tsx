@@ -6,10 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { CloseIcon, MenuIcon } from '@/components/ui/icons';
 
-const NAV_LINKS = [
+const NAV_LINKS: { href: string; label: string; longLabel?: string }[] = [
   { href: '/builder', label: 'Builder' },
+  { href: '/contemplate', label: 'Contemplate', longLabel: 'Contemplate Meaning' },
   { href: '/chat', label: 'Chat' },
-] as const;
+];
 
 export function Nav() {
   const pathname = usePathname();
@@ -37,9 +38,10 @@ export function Nav() {
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map(({ href, label }) => (
+            {NAV_LINKS.map(({ href, label, longLabel }) => (
               <Link key={href} href={href} className={linkClass(href)}>
-                {label}
+                <span className="xl:hidden">{label}</span>
+                <span className="hidden xl:inline">{longLabel ?? label}</span>
               </Link>
             ))}
           </div>
@@ -65,14 +67,14 @@ export function Nav() {
       {mobileOpen && (
         <div className="border-t border-border-subtle bg-surface px-4 py-3 md:hidden">
           <div className="flex flex-col gap-1">
-            {NAV_LINKS.map(({ href, label }) => (
+            {NAV_LINKS.map(({ href, label, longLabel }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
                 className={`${linkClass(href)} w-full justify-start`}
               >
-                {label}
+                {longLabel ?? label}
               </Link>
             ))}
             <button
