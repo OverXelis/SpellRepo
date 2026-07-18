@@ -557,3 +557,124 @@ export function countByStatus(db: Database.Database): Record<SpellStatus, number
   for (const row of rows) result[row.status] = row.c;
   return result;
 }
+
+export type DudMarkReason = 'fails_to_cast' | 'no_functional_use';
+
+export type DudRuleFilters = Pick<SearchFilters, 'circleBase' | 'primaryRune' | 'modifierRunes' | 'controlRune'>;
+
+export function dudReasonText(reason: DudMarkReason): string {
+  return reason === 'fails_to_cast' ? 'Fails to cast.' : 'No functional use.';
+}
+
+/** Human-readable label for the selected dud rule, e.g. "Directional Swift". */
+export function buildDudRuleLabel(filters: DudRuleFilters): string {
+  const parts: string[] = [];
+  if (filters.circleBase?.trim()) parts.push(filters.circleBase.trim());
+  if (filters.primaryRune?.trim()) parts.push(filters.primaryRune.trim());
+  if (filters.modifierRunes?.length) {
+    parts.push(...[...filters.modifierRunes].map((m) => m.trim()).filter(Boolean).sort());
+  }
+  if (filters.controlRune !== undefined) {
+    if (filters.controlRune === null || filters.controlRune === 'none') parts.push('No Control');
+    else if (filters.controlRune.trim()) parts.push(filters.controlRune.trim());
+  }
+  return parts.join(' ');
+}
+
+export function hasDudRuleSelection(filters: DudRuleFilters): boolean {
+  return Boolean(
+    filters.circleBase?.trim() ||
+      filters.primaryRune?.trim() ||
+      (filters.modifierRunes && filters.modifierRunes.length > 0) ||
+      filters.controlRune !== undefined
+  );
+}
+
+export function countSpellsMatching(db: Database.Database, filters: DudRuleFilters): number {
+  const { where, params } = buildWhere(db, filters);
+  const row = db.prepare(`SELECT COUNT(*) as c FROM spells s WHERE ${where}`).get(...params) as { c: number };
+  return row.c;
+}
+
+export interface BulkDudPreview {
+  matchedCount: number;
+  alreadyDudCount: number;
+  ruleLabel: string;
+  customName: string;
+  text: string;
+}
+
+export function previewBulkMarkDuds(
+  db: Database.Database,
+  filters: DudRuleFilters,
+  reason: DudMarkReason
+): BulkDudPreview {
+  if (!hasDudRuleSelection(filters)) {
+    throw new Error('Select at least one circle base, primary rune, modifier, or control rune.');
+  }
+  const ruleLabel = buildDudRuleLabel(filters);
+  if (!ruleLabel) {
+    throw new Error('Select at least one circle base, primary rune, modifier, or control rune.');
+  }
+  const { where, params } = buildWhere(db, filters);
+  const matchedCount = (db.prepare(`SELECT COUNT(*) as c FROM spells s WHERE ${where}`).get(...params) as { c: number }).c;
+  const alreadyDudCount = (
+    db
+      .prepare(`SELECT COUNT(*) as c FROM spells s WHERE ${where} AND s.status = 'dud'`)
+      .get(...params) as { c: number }
+  ).c;
+  const text = dudReasonText(reason);
+  return {
+    matchedCount,
+    alreadyDudCount,
+    ruleLabel,
+    customName: `DUD - ${ruleLabel}`,
+    text,
+  };
+}
+
+export interface BulkDudResult extends BulkDudPreview {
+  updatedCount: number;
+  updatedIds: string[];
+}
+
+/** Marks every spell matching the rune/base filters as dud, filling the
+ * standard dud template (name/summary/description) and clearing tags. */
+export function bulkMarkSpellsAsDuds(
+  db: Database.Database,
+  filters: DudRuleFilters,
+  reason: DudMarkReason
+): BulkDudResult {
+  const preview = previewBulkMarkDuds(db, filters, reason);
+  const { where, params } = buildWhere(db, filters);
+  const rows = db.prepare(`SELECT id FROM spells s WHERE ${where}`).all(...params) as { id: string }[];
+  const now = Date.now();
+  const customName = preview.customName;
+  const text = preview.text;
+
+  const updateRow = db.prepare(
+    `UPDATE spells
+     SET status = 'dud', custom_name = ?, summary = ?, description = ?, updated_at = ?
+     WHERE id = ?`
+  );
+  const clearTags = db.prepare('DELETE FROM spell_tags WHERE spell_id = ?');
+  const getRow = db.prepare('SELECT * FROM spells WHERE id = ?');
+
+  const updatedIds: string[] = [];
+  const tx = db.transaction(() => {
+    for (const { id } of rows) {
+      updateRow.run(customName, text, text, now, id);
+      clearTags.run(id);
+      const refreshed = getRow.get(id) as SpellRow;
+      recomputeAndSyncOne(db, refreshed);
+      updatedIds.push(id);
+    }
+  });
+  tx();
+
+  return {
+    ...preview,
+    updatedCount: updatedIds.length,
+    updatedIds,
+  };
+}
