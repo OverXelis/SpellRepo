@@ -77,7 +77,7 @@ export const DEFAULT_MODIFIER_RUNES = ['Empower', 'Extend', 'Exempt', 'Anchor_M'
 
 export const DEFAULT_CONTROL_RUNES = ['Draining', 'Activation', 'Channeling'];
 
-export const DEFAULT_TAGS = ['Combat', 'Utility', 'Support', 'Enchanting'];
+export const DEFAULT_TAGS = ['Combat', 'Utility', 'Support', 'Enchanting', 'Hex', 'Sigil'];
 
 export function getModifierPairKey(mod1: string, mod2: string): string {
   const sorted = [mod1, mod2].sort();
