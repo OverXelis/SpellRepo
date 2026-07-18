@@ -146,6 +146,12 @@ export function updateDisplayName(db: Database.Database, kind: RuneKind, name: s
   }
 }
 
+/** Updates a rune's free-text "meaning" note (AI context only -- doesn't
+ * affect spell naming, so no resync needed). */
+export function updateRuneMeaning(db: Database.Database, kind: RuneKind, name: string, meaning: string): void {
+  db.prepare('UPDATE runes SET meaning = ? WHERE kind = ? AND name = ?').run(meaning, KIND_TO_DB[kind], name);
+}
+
 export function updateModifierPairName(db: Database.Database, mod1: string, mod2: string, displayName: string): void {
   const [a, b] = [mod1, mod2].sort();
   db.prepare(

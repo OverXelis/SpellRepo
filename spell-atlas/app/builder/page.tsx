@@ -5,6 +5,7 @@ import type { Taxonomy } from '@/lib/db/taxonomy';
 import { fetchTaxonomy } from '@/lib/api-client';
 import { RunePanel } from '@/components/rune-panel';
 import { TagManager } from '@/components/tag-manager';
+import { BatchGeneratePanel } from '@/components/batch-generate-panel';
 import { SpellTable } from '@/components/spell-table';
 
 export default function BuilderPage() {
@@ -58,8 +59,16 @@ export default function BuilderPage() {
       {taxonomy && (
         <>
           <div className="grid gap-4 lg:grid-cols-2">
-            <RunePanel runeLists={taxonomy.runeLists} runeNameConfig={taxonomy.runeNameConfig} onChanged={reload} />
-            <TagManager tags={taxonomy.tags} onChanged={reload} />
+            <RunePanel
+              runeLists={taxonomy.runeLists}
+              runeNameConfig={taxonomy.runeNameConfig}
+              runeMeanings={taxonomy.runeMeanings}
+              onChanged={reload}
+            />
+            <div className="space-y-4">
+              <TagManager tags={taxonomy.tags} onChanged={reload} />
+              <BatchGeneratePanel runeLists={taxonomy.runeLists} onDataChanged={reload} />
+            </div>
           </div>
           <SpellTable runeLists={taxonomy.runeLists} tags={taxonomy.tags} onDataChanged={reload} />
         </>

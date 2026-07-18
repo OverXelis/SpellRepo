@@ -16,6 +16,22 @@ function applySchema(db: Database.Database) {
   const schemaPath = path.join(process.cwd(), 'lib', 'db', 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf-8');
   db.exec(schema);
+  runMigrations(db);
+}
+
+/**
+ * Lightweight, idempotent column additions for deployments that already
+ * have a populated database. `CREATE TABLE IF NOT EXISTS` in schema.sql is
+ * a no-op once the table exists, so new columns need to be added here
+ * instead -- checked via PRAGMA table_info so this is always safe to run
+ * on every startup, including against a database that already has the
+ * column (e.g. a fresh install).
+ */
+function runMigrations(db: Database.Database) {
+  const runeColumns = db.prepare('PRAGMA table_info(runes)').all() as { name: string }[];
+  if (!runeColumns.some((c) => c.name === 'meaning')) {
+    db.exec("ALTER TABLE runes ADD COLUMN meaning TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 let writable: Database.Database | null = null;

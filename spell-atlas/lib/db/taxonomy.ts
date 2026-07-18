@@ -1,12 +1,13 @@
 import type Database from 'better-sqlite3';
-import { getRuneLists, getRuneNameConfig } from '@/lib/db/naming';
+import { getRuneLists, getRuneMeanings, getRuneNameConfig } from '@/lib/db/naming';
 import { getAllTags } from '@/lib/db/tags';
 import { countAllSpells, countByStatus } from '@/lib/db/spells';
-import type { RuneLists, RuneNameConfig, TagInfo } from '@/lib/core/types';
+import type { RuneLists, RuneMeaningConfig, RuneNameConfig, TagInfo } from '@/lib/core/types';
 
 export interface Taxonomy {
   runeLists: RuneLists;
   runeNameConfig: RuneNameConfig;
+  runeMeanings: RuneMeaningConfig;
   tags: TagInfo[];
   tagCategories: string[];
   totalSpellCount: number;
@@ -28,6 +29,7 @@ export function getTaxonomy(db: Database.Database): Taxonomy {
   return {
     runeLists: getRuneLists(db),
     runeNameConfig: getRuneNameConfig(db),
+    runeMeanings: getRuneMeanings(db),
     tags,
     tagCategories,
     totalSpellCount: countAllSpells(db),
