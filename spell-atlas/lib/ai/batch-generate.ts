@@ -40,7 +40,7 @@ export const BATCH_TOOL: Anthropic.Tool = {
               type: 'array',
               items: { type: 'string' },
               description:
-                '1-2 tags. Prefer existing tags. Required when applicable: Hex for non-dud Draining; Enchanting for non-dud Activation; Sigil for useful non-dud Anchor; Support together with Hex when a Draining effect is beneficial. Only invent a new general-purpose tag if none fit.',
+                '1-2 tags for non-dud spells. Prefer existing tags. Required when applicable: Hex for non-dud Draining; Enchanting for non-dud Activation; Sigil for useful non-dud Anchor; Support together with Hex when a Draining effect is beneficial. For duds (isDud true): return an empty array -- duds must have no tags.',
             },
             isDud: {
               type: 'boolean',
@@ -227,6 +227,7 @@ NAMING
 ================================================================================
 TAGGING (1-2 tags; required tags take priority)
 ================================================================================
+- If isDud true: tags MUST be an empty array []. Duds never receive purpose tags (not even "Dud").
 - Draining + not dud -> MUST include Hex. Beneficial/ally-facing -> Hex + Support when possible.
 - Activation + not dud -> MUST include Enchanting.
 - Anchor + useful/non-dud -> MUST include Sigil. Do not also tag Enchanting.
@@ -367,16 +368,22 @@ export function applyGeneratedEntry(
   const hasSummary = Boolean(spell.summary.trim());
   const hasTags = spell.tags.length > 0;
 
-  if (hasName && hasDescription && hasSummary && hasTags) return null;
+  // Only auto-promote from normal; never overwrite favorite/hand-curated status.
+  const markDud = spell.status === 'normal' && Boolean(generated.isDud);
+  const markNiche = spell.status === 'normal' && !markDud && Boolean(generated.isNiche);
+  const isOrBecomingDud = spell.status === 'dud' || markDud;
+  // Duds intentionally have no purpose tags -- treat tags as satisfied for them.
+  const tagsComplete = hasTags || isOrBecomingDud;
+
+  if (hasName && hasDescription && hasSummary && tagsComplete && !markDud && !markNiche) {
+    return null;
+  }
 
   const patch: { customName?: string; description?: string; summary?: string; tags?: string[]; status?: 'normal' | 'dud' | 'niche' } = {};
   const generatedFields: string[] = [];
   let newTagsCreated: string[] = [];
   let finalTags = spell.tags;
 
-  // Only auto-promote from normal; never overwrite favorite/hand-curated status.
-  const markDud = spell.status === 'normal' && Boolean(generated.isDud);
-  const markNiche = spell.status === 'normal' && !markDud && Boolean(generated.isNiche);
   if (markDud) {
     patch.status = 'dud';
     generatedFields.push('status');
@@ -397,11 +404,13 @@ export function applyGeneratedEntry(
     patch.summary = generated.summary.trim().slice(0, 100);
     generatedFields.push('summary');
   }
-  // Duds should not keep purpose tags -- they clutter filters.
-  if (markDud) {
-    patch.tags = [];
-    finalTags = [];
-    generatedFields.push('tags');
+  // Duds should not keep purpose tags -- they clutter filters. Never invent tags for them.
+  if (isOrBecomingDud) {
+    if (markDud || hasTags) {
+      patch.tags = [];
+      finalTags = [];
+      generatedFields.push('tags');
+    }
   } else if (!hasTags && Array.isArray(generated.tags) && generated.tags.length > 0) {
     const reconciled = reconcileTags(generated.tags, knownTags);
     patch.tags = reconciled.finalTags;

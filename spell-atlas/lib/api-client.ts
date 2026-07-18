@@ -116,6 +116,32 @@ export function estimateGenerationCost(spellCount: number, batchSize: number): P
   return jsonFetch(`/api/generate/estimate?spellCount=${spellCount}&batchSize=${batchSize}`);
 }
 
+export type DudMarkReason = 'fails_to_cast' | 'no_functional_use';
+
+export interface BulkDudRequest {
+  circleBase?: string;
+  primaryRune?: string;
+  modifierRunes?: string[];
+  controlRune?: string | null;
+  reason: DudMarkReason;
+  dryRun?: boolean;
+}
+
+export interface BulkDudResponse {
+  matchedCount: number;
+  alreadyDudCount: number;
+  ruleLabel: string;
+  customName: string;
+  text: string;
+  dryRun: boolean;
+  updatedCount?: number;
+  updatedIds?: string[];
+}
+
+export function bulkMarkDudsApi(body: BulkDudRequest): Promise<BulkDudResponse> {
+  return jsonFetch('/api/spells/bulk-dud', { method: 'POST', body: JSON.stringify(body) });
+}
+
 export async function importDatabase(jsonText: string): Promise<{ success: boolean; error?: string }> {
   const res = await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: jsonText });
   if (!res.ok) {

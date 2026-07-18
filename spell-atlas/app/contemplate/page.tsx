@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Taxonomy } from '@/lib/db/taxonomy';
 import type { GeneratedReviewBatch } from '@/lib/generated-review';
 import { clearReviewBatches, loadReviewBatches, saveReviewBatches } from '@/lib/generated-review';
-import { fetchTaxonomy, getSpell } from '@/lib/api-client';
+import { fetchTaxonomy, getSpell, type BulkDudResponse } from '@/lib/api-client';
 import { BatchGeneratePanel } from '@/components/batch-generate-panel';
+import { BulkDudPanel } from '@/components/bulk-dud-panel';
 import { GeneratedReviewTable } from '@/components/generated-review-table';
 
 export default function ContemplatePage() {
@@ -59,6 +60,30 @@ export default function ContemplatePage() {
     reload();
   };
 
+  const handleBulkDudsApplied = (result: BulkDudResponse) => {
+    const updated = new Set(result.updatedIds ?? []);
+    if (updated.size > 0) {
+      const next = loadReviewBatches().map((batch) => ({
+        ...batch,
+        entries: batch.entries.map((entry) =>
+          updated.has(entry.id)
+            ? {
+                ...entry,
+                name: result.customName,
+                summary: result.text,
+                description: result.text,
+                tags: [],
+                status: 'dud' as const,
+              }
+            : entry
+        ),
+      }));
+      saveReviewBatches(next);
+      setReviewBatches(next);
+    }
+    reload();
+  };
+
   return (
     <div className="page-shell space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -92,6 +117,7 @@ export default function ContemplatePage() {
 
       {taxonomy && (
         <>
+          <BulkDudPanel runeLists={taxonomy.runeLists} onApplied={handleBulkDudsApplied} />
           <BatchGeneratePanel
             runeLists={taxonomy.runeLists}
             onDataChanged={reload}
