@@ -96,12 +96,27 @@ This folder is **database only**. Do not put logo or banner images here.
 
 ### Custom logo and banner
 
-Replace these files in **git**, then **Pull and redeploy** in Portainer (rebuild required):
+The app loads these files from `spell-atlas/public/` (baked into the Docker image at build time):
 
-| File | Used for |
-|------|----------|
+| File the app uses | Used for |
+|-------------------|----------|
 | `public/logo.png` | Favicon, nav icon, login screen |
 | `public/name-banner.png` | Builder page header banner |
+
+If you upload **`Logo.png`** or **`NamePNG.png`** (the names from your design export), put them in `spell-atlas/public/` — not in `spell-circle-tool/` and not in the NAS appdata folder. A pre-build script copies them to `logo.png` and `name-banner.png` automatically.
+
+After any image change in git:
+
+1. Commit and push to GitHub.
+2. In Portainer: open the stack, then **Pull and redeploy** so the image **rebuilds** (a container restart alone is not enough).
+
+To verify the running container has your files:
+
+```bash
+docker exec spell-atlas ls -la /app/public/logo.png /app/public/name-banner.png
+```
+
+You should see non-zero file sizes (roughly 80 KB and 120 KB for typical PNGs). If the files are missing or only a few KB, Portainer is still serving an old image build.
 
 ### First deploy
 

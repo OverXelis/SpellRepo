@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE_NAME, isAuthRequired, isValidSessionCookie } from '@/lib/auth';
 
+const PUBLIC_ASSET = /\.(?:png|svg|ico|jpg|jpeg|webp|gif)$/i;
+
 export function proxy(request: NextRequest) {
   if (!isAuthRequired()) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
+  if (PUBLIC_ASSET.test(pathname)) {
+    return NextResponse.next();
+  }
   if (pathname === '/login' || pathname.startsWith('/api/auth/login')) {
     return NextResponse.next();
   }
