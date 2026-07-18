@@ -54,6 +54,10 @@ export function addRuneApi(kind: RuneKind, name: string): Promise<{ addedCount: 
   return jsonFetch('/api/runes', { method: 'POST', body: JSON.stringify({ kind, name }) });
 }
 
+export function getRuneAffectedCountApi(kind: RuneKind, name: string): Promise<{ affectedSpellCount: number }> {
+  return jsonFetch(`/api/runes/${kind}/${encodeURIComponent(name)}`);
+}
+
 export function removeRuneApi(kind: RuneKind, name: string): Promise<{ removedSpellCount: number }> {
   return jsonFetch(`/api/runes/${kind}/${encodeURIComponent(name)}`, { method: 'DELETE' });
 }

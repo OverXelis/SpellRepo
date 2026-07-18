@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ensureDefaultRunesSeeded } from '@/lib/db/naming';
 
 const DATABASE_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'spell-atlas.db');
 
@@ -29,6 +30,12 @@ export function getDb(): Database.Database {
     ensureDirExists(DATABASE_PATH);
     writable = new Database(DATABASE_PATH);
     applySchema(writable);
+    // Seed default circle bases/modifiers/controls here (once, idempotently)
+    // rather than in individual routes -- previously only /api/taxonomy and
+    // /api/chat did this, so hitting e.g. /api/runes first on a fresh
+    // database left circleBases empty and silently generated zero spell
+    // combinations for the first primary rune added.
+    ensureDefaultRunesSeeded(writable);
   }
   return writable;
 }

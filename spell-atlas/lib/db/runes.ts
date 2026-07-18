@@ -73,19 +73,33 @@ export interface RemoveRuneResult {
   removedSpellCount: number;
 }
 
-export function removeRune(db: Database.Database, kind: RuneKind, name: string): RemoveRuneResult {
-  let idsToRemove: string[] = [];
+/** Finds every spell that references a given rune (or circle base), used
+ * both to preview a deletion's blast radius before the user confirms it,
+ * and to actually cascade-delete them. */
+export function getAffectedSpellIds(db: Database.Database, kind: RuneKind, name: string): string[] {
   if (kind === 'primary') {
-    idsToRemove = (db.prepare('SELECT id FROM spells WHERE primary_rune = ?').all(name) as { id: string }[]).map((r) => r.id);
-  } else if (kind === 'control') {
-    idsToRemove = (db.prepare('SELECT id FROM spells WHERE control_rune = ?').all(name) as { id: string }[]).map((r) => r.id);
-  } else if (kind === 'modifier') {
-    idsToRemove = (
-      db
-        .prepare('SELECT s.id as id FROM spells s JOIN spell_modifiers sm ON sm.spell_id = s.id WHERE sm.modifier_rune = ?')
-        .all(name) as { id: string }[]
-    ).map((r) => r.id);
+    return (db.prepare('SELECT id FROM spells WHERE primary_rune = ?').all(name) as { id: string }[]).map((r) => r.id);
   }
+  if (kind === 'control') {
+    return (db.prepare('SELECT id FROM spells WHERE control_rune = ?').all(name) as { id: string }[]).map((r) => r.id);
+  }
+  if (kind === 'circleBase') {
+    return (db.prepare('SELECT id FROM spells WHERE circle_base = ?').all(name) as { id: string }[]).map((r) => r.id);
+  }
+  // modifier
+  return (
+    db
+      .prepare('SELECT s.id as id FROM spells s JOIN spell_modifiers sm ON sm.spell_id = s.id WHERE sm.modifier_rune = ?')
+      .all(name) as { id: string }[]
+  ).map((r) => r.id);
+}
+
+export function countAffectedSpells(db: Database.Database, kind: RuneKind, name: string): number {
+  return getAffectedSpellIds(db, kind, name).length;
+}
+
+export function removeRune(db: Database.Database, kind: RuneKind, name: string): RemoveRuneResult {
+  const idsToRemove = getAffectedSpellIds(db, kind, name);
 
   const tx = db.transaction(() => {
     if (idsToRemove.length > 0) deleteSpells(db, idsToRemove);

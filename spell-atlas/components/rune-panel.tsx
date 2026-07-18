@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { RuneKind, RuneLists, RuneNameConfig } from '@/lib/core/types';
 import {
   addRuneApi,
+  getRuneAffectedCountApi,
   removeRuneApi,
   renameRuneApi,
   setModifierPairNameApi,
@@ -40,6 +41,8 @@ function RuneRow({
   const [nameValue, setNameValue] = useState(name);
   const [displayValue, setDisplayValue] = useState(displayName);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [affectedCount, setAffectedCount] = useState<number | null>(null);
+  const [countLoading, setCountLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const saveDisplayName = async () => {
@@ -66,6 +69,20 @@ function RuneRow({
     }
   };
 
+  const startDeleteConfirm = async () => {
+    setConfirmingDelete(true);
+    setCountLoading(true);
+    setAffectedCount(null);
+    try {
+      const { affectedSpellCount } = await getRuneAffectedCountApi(kind, name);
+      setAffectedCount(affectedSpellCount);
+    } catch {
+      setAffectedCount(null);
+    } finally {
+      setCountLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     setBusy(true);
     try {
@@ -74,6 +91,7 @@ function RuneRow({
     } finally {
       setBusy(false);
       setConfirmingDelete(false);
+      setAffectedCount(null);
     }
   };
 
@@ -108,16 +126,34 @@ function RuneRow({
       />
       {confirmingDelete ? (
         <span className="flex items-center gap-1 text-xs">
-          <span className="text-red-400">Delete?</span>
-          <button onClick={handleDelete} disabled={busy} className="rounded bg-red-900/60 px-1.5 py-0.5 text-red-200">
-            Yes
+          <span className="text-red-400">
+            {countLoading
+              ? 'Checking affected spells...'
+              : affectedCount === null
+              ? 'Delete? (could not check affected spells)'
+              : affectedCount > 0
+              ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
+              : `Delete "${name}"? (0 spells affected)`}
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={busy || countLoading}
+            className="rounded bg-red-900/60 px-1.5 py-0.5 text-red-200 disabled:opacity-50"
+          >
+            Yes, delete
           </button>
-          <button onClick={() => setConfirmingDelete(false)} className="rounded bg-neutral-800 px-1.5 py-0.5">
-            No
+          <button
+            onClick={() => {
+              setConfirmingDelete(false);
+              setAffectedCount(null);
+            }}
+            className="rounded bg-neutral-800 px-1.5 py-0.5"
+          >
+            Cancel
           </button>
         </span>
       ) : (
-        <button onClick={() => setConfirmingDelete(true)} className="text-xs text-neutral-500 hover:text-red-400">
+        <button onClick={startDeleteConfirm} className="text-xs text-neutral-500 hover:text-red-400">
           delete
         </button>
       )}

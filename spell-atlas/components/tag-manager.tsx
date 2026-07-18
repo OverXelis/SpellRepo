@@ -102,7 +102,8 @@ function TagChip({ tag, onChanged }: { tag: TagInfo; onChanged: () => void }) {
       </button>
       <button
         onClick={async () => {
-          if (confirm(`Remove tag "${tag.name}" from all spells?`)) {
+          const countMsg = tag.count > 0 ? ` It's currently on ${tag.count} spell${tag.count === 1 ? '' : 's'}.` : '';
+          if (confirm(`Delete tag "${tag.name}"?${countMsg} This only removes the tag itself, not the spells.`)) {
             await removeTagApi(tag.name);
             onChanged();
           }
