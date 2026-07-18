@@ -13,8 +13,8 @@ services:
       - APP_PASSWORD=${APP_PASSWORD}
       - DATABASE_PATH=/data/spell-atlas.db
     volumes:
-      # Bind mount to a folder on your NAS pool so the database is easy to
-      # find, back up, and snapshot. Create this folder on the NAS before
-      # first start (see README). If your pool is not volume1, change the
-      # left-hand path to match your UGREEN shared-folder layout.
-      - /volume1/dockerapps/appdata/spell-atlas:/data
+      # Bind mount — database lives on the NAS pool at this path (not inside
+      # Docker's internal volumes). One-time host setup: create the folder and
+      # chown to your NAS user (see README). Portainer: redeploy stack after
+      # this file changes on main.
+      - /volume2/dockerapps/appdata/spell-atlas:/data

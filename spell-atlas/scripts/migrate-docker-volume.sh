@@ -4,17 +4,16 @@
 # destination already has spell-atlas.db unless --force is passed).
 #
 # Usage (on the NAS, from the spell-atlas repo directory):
-#   ./scripts/migrate-docker-volume.sh
-#   ./scripts/migrate-docker-volume.sh --force
-#
-# Prerequisites:
-#   - docker available
-#   - destination folder exists (or will be created by Docker on first start;
-#     this script creates it too so the copy has somewhere to go)
+#   sudo ./scripts/migrate-docker-volume.sh
+#   sudo ./scripts/migrate-docker-volume.sh --force
 
 set -euo pipefail
 
-DEST="${SPELL_ATLAS_DATA_DIR:-/volume1/dockerapps/appdata/spell-atlas}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=nas-data-dir.sh
+source "$SCRIPT_DIR/nas-data-dir.sh"
+
+DEST="$SPELL_ATLAS_DATA_DIR"
 FORCE=false
 OLD_VOLUME="${SPELL_ATLAS_OLD_VOLUME:-}"
 
@@ -24,6 +23,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: $0 [--force]"
       echo "  DEST: $DEST (override with SPELL_ATLAS_DATA_DIR)"
+      echo "  OWNER: $SPELL_ATLAS_OWNER (override with SPELL_ATLAS_OWNER)"
       echo "  OLD_VOLUME: auto-detect, or set SPELL_ATLAS_OLD_VOLUME"
       exit 0
       ;;
@@ -34,11 +34,17 @@ for arg in "$@"; do
   esac
 done
 
-mkdir -p "$DEST"
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  echo "This script needs root to copy files and set ownership. Re-run with sudo." >&2
+  exit 1
+fi
+
+ensure_data_dir
 
 if [[ -f "$DEST/spell-atlas.db" && "$FORCE" != true ]]; then
   echo "Destination already has spell-atlas.db: $DEST/spell-atlas.db"
   echo "Nothing to do. Pass --force to overwrite from the old volume."
+  fix_permissions "$DEST" || true
   exit 0
 fi
 
@@ -64,6 +70,8 @@ docker run --rm \
   -v "$DEST:/to" \
   alpine:3.20 \
   sh -c 'cp -av /from/. /to/'
+
+fix_permissions "$DEST"
 
 echo "Done. Files now in $DEST:"
 ls -la "$DEST"
