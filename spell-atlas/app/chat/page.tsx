@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { ChevronDownIcon, ChevronRightIcon } from '@/components/ui/icons';
 
 interface ToolTraceEntry {
   name: string;
@@ -20,6 +21,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const send = async () => {
     const text = input.trim();
@@ -51,38 +53,50 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-49px)] max-w-3xl flex-col px-4 py-6">
-      <div>
-        <h1 className="text-xl font-semibold text-neutral-100">Spell Research Chat</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Describe the scene or goal -- the assistant will search your spell database (read-only) for options that fit.
+    <div className="mx-auto flex h-[calc(100dvh-var(--nav-height))] w-full max-w-4xl flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-5">
+      <div className="shrink-0">
+        <h1 className="page-title">Spell Research Chat</h1>
+        <p className="page-subtitle">
+          Describe the scene or goal. The assistant searches your spell database (read-only) for options that fit.
         </p>
       </div>
 
-      <div className="mt-4 flex-1 space-y-4 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
-        {turns.length === 0 && (
-          <p className="text-sm italic text-neutral-600">
-            Try: &quot;My MC is cornered in a narrow alley by two guards and needs to escape without killing them -- what do I have?&quot;
-          </p>
-        )}
-        {turns.map((turn, i) => (
-          <div key={i} className={turn.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-            <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                turn.role === 'user'
-                  ? 'bg-indigo-600 text-white'
-                  : turn.error
-                  ? 'bg-red-950 text-red-300 border border-red-900'
-                  : 'bg-neutral-800 text-neutral-100'
-              }`}
-            >
-              {turn.content}
-              {turn.toolTrace && turn.toolTrace.length > 0 && <ToolTrace entries={turn.toolTrace} />}
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-surface-raised p-3 sm:p-4">
+        <div className="space-y-4">
+          {turns.length === 0 && (
+            <div className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-foreground-muted">
+              <p className="font-medium text-foreground">Example prompt</p>
+              <p className="mt-2 italic">
+                &quot;My MC is cornered in a narrow alley by two guards and needs to escape without killing them -- what do I have?&quot;
+              </p>
             </div>
-          </div>
-        ))}
-        {loading && <p className="text-xs italic text-neutral-500">Searching the database...</p>}
-        <div ref={bottomRef} />
+          )}
+          {turns.map((turn, i) => (
+            <div key={i} className={turn.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+              <div className={`max-w-[min(100%,42rem)] ${turn.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-foreground-subtle">
+                  {turn.role === 'user' ? 'You' : 'Assistant'}
+                </p>
+                <div
+                  className={`rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                    turn.role === 'user'
+                      ? 'bg-primary text-white'
+                      : turn.error
+                      ? 'border border-red-900 bg-danger-muted text-red-200'
+                      : 'border border-border bg-surface text-foreground'
+                  }`}
+                >
+                  {turn.content}
+                  {turn.toolTrace && turn.toolTrace.length > 0 && <ToolTrace entries={turn.toolTrace} />}
+                </div>
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <p className="text-sm italic text-foreground-subtle">Searching the database...</p>
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       <form
@@ -90,9 +104,10 @@ export default function ChatPage() {
           e.preventDefault();
           send();
         }}
-        className="mt-3 flex gap-2"
+        className="mt-3 shrink-0 space-y-2"
       >
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -101,17 +116,20 @@ export default function ChatPage() {
               send();
             }
           }}
-          rows={2}
+          rows={3}
           placeholder="Describe the scene or goal..."
-          className="flex-1 resize-none rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500"
+          className="ui-textarea min-h-[5.5rem] text-base sm:text-sm"
         />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="rounded bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          Send
-        </button>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-foreground-subtle">Enter to send, Shift+Enter for a new line</p>
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            className="ui-btn ui-btn-accent w-full sm:w-auto sm:min-w-[7rem]"
+          >
+            {loading ? 'Sending...' : 'Send'}
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -120,18 +138,23 @@ export default function ChatPage() {
 function ToolTrace({ entries }: { entries: ToolTraceEntry[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-2 border-t border-neutral-700 pt-2">
-      <button onClick={() => setOpen(!open)} className="text-xs text-neutral-400 hover:text-neutral-200">
-        {open ? '▾' : '▸'} {entries.length} database lookup{entries.length === 1 ? '' : 's'}
+    <div className="mt-3 border-t border-border pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-1 text-xs text-foreground-muted hover:text-foreground"
+      >
+        {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        {entries.length} database lookup{entries.length === 1 ? '' : 's'}
       </button>
       {open && (
-        <div className="mt-1 space-y-1.5">
+        <div className="mt-2 space-y-2">
           {entries.map((entry, i) => (
-            <div key={i} className="rounded bg-neutral-950/60 p-2 text-[11px] text-neutral-500">
-              <div className="font-mono text-neutral-400">
+            <div key={i} className="rounded-md border border-border-subtle bg-background p-2.5 text-[11px] text-foreground-subtle">
+              <div className="font-mono text-foreground-muted">
                 {entry.name}({JSON.stringify(entry.input)})
               </div>
-              <div className="mt-0.5 truncate text-neutral-600">{entry.resultSummary}</div>
+              <div className="mt-1 text-foreground-subtle">{entry.resultSummary}</div>
             </div>
           ))}
         </div>

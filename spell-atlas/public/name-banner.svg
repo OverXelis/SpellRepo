@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 120" role="img" aria-label="Spell Weaver Chronicles">
+  <defs>
+    <linearGradient id="title-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a7fd4"/>
+      <stop offset="100%" stop-color="#1e5bb4"/>
+    </linearGradient>
+  </defs>
+  <circle cx="52" cy="60" r="34" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.85"/>
+  <circle cx="52" cy="28" r="8" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.7"/>
+  <circle cx="52" cy="92" r="8" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.7"/>
+  <circle cx="22" cy="60" r="8" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.7"/>
+  <path d="M52 26 L68 60 L52 94 L36 60 Z" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.55"/>
+  <text x="100" y="58" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" fill="url(#title-blue)" stroke="#ffffff" stroke-width="0.8" paint-order="stroke fill">SPELL WEAVER</text>
+  <text x="330" y="92" font-family="Georgia, 'Times New Roman', serif" font-size="18" font-weight="600" fill="#ffffff" letter-spacing="4">CHRONICLES</text>
+</svg>

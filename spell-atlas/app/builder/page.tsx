@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Taxonomy } from '@/lib/db/taxonomy';
 import { fetchTaxonomy } from '@/lib/api-client';
+import { PageBanner } from '@/components/page-banner';
 import { RunePanel } from '@/components/rune-panel';
 import { TagManager } from '@/components/tag-manager';
 import { BatchGeneratePanel } from '@/components/batch-generate-panel';
@@ -20,37 +21,37 @@ export default function BuilderPage() {
   }, []);
 
   useEffect(() => {
-    // Standard fetch-on-mount pattern -- see the equivalent, more detailed
-    // comment in components/spell-table.tsx.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     reload();
   }, [reload]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-neutral-100">Spell Database</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {taxonomy
-            ? `${taxonomy.totalSpellCount} spells · ${taxonomy.statusCounts.favorite} favorites · ${taxonomy.statusCounts.dud} duds`
-            : error
-            ? null
-            : 'Loading...'}
-        </p>
+    <div className="page-shell space-y-6">
+      <PageBanner />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Spell Database</h1>
+          <p className="page-subtitle">Browse, filter, and edit spells in your atlas.</p>
+        </div>
+        {taxonomy && (
+          <div className="flex flex-wrap gap-2">
+            <span className="ui-badge ui-badge-accent">{taxonomy.totalSpellCount} spells</span>
+            <span className="ui-badge ui-badge-primary">{taxonomy.statusCounts.favorite} favorites</span>
+            <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.dud} duds</span>
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+        <div className="rounded-lg border border-red-900 bg-danger-muted p-4 text-sm text-red-200">
           <p className="font-medium">Couldn&apos;t load the database.</p>
-          <p className="mt-1 text-red-400">{error}</p>
-          <p className="mt-2 text-xs text-red-500">
+          <p className="mt-1 text-red-300">{error}</p>
+          <p className="mt-2 text-xs text-red-400">
             Check the server/container logs for the full error. Common causes: the SQLite data directory isn&apos;t
             writable by the container user, or the volume mount is misconfigured.
           </p>
-          <button
-            onClick={reload}
-            className="mt-3 rounded border border-red-800 px-3 py-1 text-xs text-red-200 hover:bg-red-900/40"
-          >
+          <button onClick={reload} className="ui-btn-sm ui-btn-danger mt-3">
             Retry
           </button>
         </div>
@@ -58,7 +59,7 @@ export default function BuilderPage() {
 
       {taxonomy && (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-2">
             <RunePanel
               runeLists={taxonomy.runeLists}
               runeNameConfig={taxonomy.runeNameConfig}

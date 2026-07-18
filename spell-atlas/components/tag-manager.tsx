@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { TagInfo } from '@/lib/core/types';
 import { addTagApi, removeTagApi, renameTagApi, setTagCategoryApi } from '@/lib/api-client';
+import { CheckIcon, CloseIcon, EditIcon } from '@/components/ui/icons';
 
 interface Props {
   tags: TagInfo[];
@@ -25,40 +26,42 @@ export function TagManager({ tags, onChanged }: Props) {
   };
 
   return (
-    <div className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-100">
-          Tags <span className="text-xs font-normal text-neutral-500">({tags.length})</span>
+    <div className="ui-panel space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="ui-panel-header">
+          Tags <span className="text-xs font-normal text-foreground-subtle">({tags.length})</span>
         </h2>
-        <button onClick={() => setShowAdd((v) => !v)} className="text-xs text-indigo-400 hover:text-indigo-300">
-          {showAdd ? 'Cancel' : '+ Add tag'}
+        <button type="button" onClick={() => setShowAdd((v) => !v)} className="ui-btn-sm ui-btn-secondary">
+          {showAdd ? 'Cancel' : 'Add tag'}
         </button>
       </div>
 
       {showAdd && (
-        <form onSubmit={handleAdd} className="flex flex-wrap gap-1.5">
+        <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <input
             autoFocus
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             placeholder="Tag name"
-            className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-100 outline-none focus:border-neutral-500"
+            className="ui-input-sm flex-1"
           />
           <input
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
             placeholder="Category (optional)"
-            className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-100 outline-none focus:border-neutral-500"
+            className="ui-input-sm flex-1"
           />
-          <button type="submit" className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-500">
+          <button type="submit" className="ui-btn-sm ui-btn-primary">
             Add
           </button>
         </form>
       )}
 
-      <div className="flex flex-wrap gap-1">
-        {tags.length === 0 && <span className="text-xs italic text-neutral-600">No tags yet</span>}
-        {tags.map((tag) => <TagChip key={tag.name} tag={tag} onChanged={onChanged} />)}
+      <div className="flex flex-wrap gap-1.5">
+        {tags.length === 0 && <span className="text-xs italic text-foreground-subtle">No tags yet</span>}
+        {tags.map((tag) => (
+          <TagChip key={tag.name} tag={tag} onChanged={onChanged} />
+        ))}
       </div>
     </div>
   );
@@ -83,35 +86,41 @@ function TagChip({ tag, onChanged }: { tag: TagInfo; onChanged: () => void }) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1 rounded border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[11px]">
+      <div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-background px-2 py-1.5 text-[11px]">
         <input
           autoFocus
           value={nameValue}
           onChange={(e) => setNameValue(e.target.value)}
-          className="w-16 bg-transparent text-neutral-100 outline-none"
+          className="w-20 bg-transparent text-foreground outline-none"
         />
         <input
           value={categoryValue}
           onChange={(e) => setCategoryValue(e.target.value)}
           placeholder="category"
-          className="w-16 bg-transparent text-neutral-400 outline-none border-l border-neutral-700 pl-1"
+          className="w-20 border-l border-border bg-transparent pl-2 text-foreground-muted outline-none"
         />
-        <button onClick={save} className="text-green-400">
-          ✓
+        <button type="button" onClick={save} className="rounded p-1 text-success hover:bg-surface-hover" aria-label="Save">
+          <CheckIcon />
         </button>
       </div>
     );
   }
 
   return (
-    <span className="group inline-flex items-center gap-1 rounded bg-neutral-800 px-1.5 py-0.5 text-[11px] text-neutral-300">
-      {tag.category && <span className="text-neutral-500">{tag.category}/</span>}
+    <span className="group inline-flex items-center gap-1 rounded-md border border-border-subtle bg-surface-raised px-2 py-1 text-[11px] text-foreground-muted">
+      {tag.category && <span className="text-foreground-subtle">{tag.category}/</span>}
       {tag.name}
-      <span className="text-neutral-500">({tag.count})</span>
-      <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-neutral-200">
-        ✎
+      <span className="text-foreground-subtle">({tag.count})</span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="rounded p-0.5 opacity-70 hover:bg-surface-hover hover:opacity-100"
+        aria-label={`Edit ${tag.name}`}
+      >
+        <EditIcon />
       </button>
       <button
+        type="button"
         onClick={async () => {
           const countMsg = tag.count > 0 ? ` It's currently on ${tag.count} spell${tag.count === 1 ? '' : 's'}.` : '';
           if (confirm(`Delete tag "${tag.name}"?${countMsg} This only removes the tag itself, not the spells.`)) {
@@ -119,9 +128,10 @@ function TagChip({ tag, onChanged }: { tag: TagInfo; onChanged: () => void }) {
             onChanged();
           }
         }}
-        className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-red-400"
+        className="rounded p-0.5 opacity-70 hover:bg-danger-muted hover:text-red-300 hover:opacity-100"
+        aria-label={`Delete ${tag.name}`}
       >
-        ×
+        <CloseIcon />
       </button>
     </span>
   );

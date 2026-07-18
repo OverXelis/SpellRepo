@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 48" role="img" aria-label="SWC">
+  <defs>
+    <linearGradient id="swc-shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7ee7f2"/>
+      <stop offset="45%" stop-color="#48c9d8"/>
+      <stop offset="100%" stop-color="#2a9aaa"/>
+    </linearGradient>
+  </defs>
+  <text x="8" y="36" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" fill="url(#swc-shine)" letter-spacing="2">SWC</text>
+</svg>
