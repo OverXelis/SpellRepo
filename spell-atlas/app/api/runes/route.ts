@@ -3,13 +3,14 @@ import { getDb } from '@/lib/db/client';
 import { getRuneLists } from '@/lib/db/naming';
 import { addRune } from '@/lib/db/runes';
 import type { RuneKind } from '@/lib/core/types';
+import { withErrorHandling } from '@/lib/api-utils';
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   const db = getDb();
   return NextResponse.json(getRuneLists(db));
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   const db = getDb();
   const body = await request.json().catch(() => ({}));
   const kind = body.kind as RuneKind;
@@ -28,4 +29,4 @@ export async function POST(request: NextRequest) {
 
   const result = addRune(db, kind, name);
   return NextResponse.json(result);
-}
+});

@@ -26,6 +26,7 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
   const [offset, setOffset] = useState(0);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,9 +63,12 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
 
   const load = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const r = await searchSpellsApi(filters);
       setResult(r);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load spells');
     } finally {
       setLoading(false);
     }
@@ -212,8 +216,21 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
       </div>
 
       <div className="text-xs text-neutral-500">
-        {result ? `${result.totalMatches} spell${result.totalMatches === 1 ? '' : 's'} match${hasFilters ? 'ing filters' : ''}` : 'Loading...'}
+        {result
+          ? `${result.totalMatches} spell${result.totalMatches === 1 ? '' : 's'} match${hasFilters ? 'ing filters' : ''}`
+          : loadError
+          ? null
+          : 'Loading...'}
       </div>
+
+      {loadError && (
+        <div className="rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+          <p className="font-medium">Couldn&apos;t load spells: {loadError}</p>
+          <button onClick={load} className="mt-2 rounded border border-red-800 px-3 py-1 text-xs text-red-200 hover:bg-red-900/40">
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-neutral-800">
         <table className="w-full text-sm">

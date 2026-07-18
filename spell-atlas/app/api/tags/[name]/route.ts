@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
 import { removeTag, renameTag, setTagCategory } from '@/lib/db/tags';
+import { withErrorHandling } from '@/lib/api-utils';
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ name: string }> }) {
+export const PATCH = withErrorHandling(async (request: NextRequest, { params }: { params: Promise<{ name: string }> }) => {
   const { name } = await params;
   const db = getDb();
   const body = await request.json().catch(() => ({}));
@@ -16,11 +17,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   return NextResponse.json({ success: true });
-}
+});
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ name: string }> }) {
+export const DELETE = withErrorHandling(async (_request: NextRequest, { params }: { params: Promise<{ name: string }> }) => {
   const { name } = await params;
   const db = getDb();
   removeTag(db, decodeURIComponent(name));
   return NextResponse.json({ success: true });
-}
+});
