@@ -97,16 +97,26 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
                   </tr>
                 </thead>
                 <tbody>
-                  {batch.entries.map((entry) => (
-                    <ReviewRow
-                      key={entry.id}
-                      entry={entry}
-                      expanded={expandedIds.has(entry.id)}
-                      availableTags={availableTags}
-                      onToggle={() => toggleExpanded(entry.id)}
-                      onEntryUpdated={onEntryUpdated}
-                    />
-                  ))}
+                  {batch.entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-sm text-foreground-subtle">
+                        {batch.completedAt
+                          ? 'No spells were added to this review batch.'
+                          : 'Spells will appear here as they are generated…'}
+                      </td>
+                    </tr>
+                  ) : (
+                    batch.entries.map((entry) => (
+                      <ReviewRow
+                        key={entry.id}
+                        entry={entry}
+                        expanded={expandedIds.has(entry.id)}
+                        availableTags={availableTags}
+                        onToggle={() => toggleExpanded(entry.id)}
+                        onEntryUpdated={onEntryUpdated}
+                      />
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
