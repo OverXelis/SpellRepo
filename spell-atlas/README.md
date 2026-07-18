@@ -71,7 +71,9 @@ The bind mount in `docker-compose.yml` is:
 - /volume2/dockerapps/appdata/spell-atlas:/data
 ```
 
-Your SQLite file lives at **`/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db`** on the NAS.
+Your SQLite file lives at **`/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db`** on the NAS. This folder is **database only** — do not put logo or banner images here.
+
+**Logo and banner images** belong in the git repo at `spell-atlas/public/logo.png` and `spell-atlas/public/name-banner.png`, then redeploy the Portainer stack so the image rebuild picks them up.
 
 ### Portainer: first deploy
 
