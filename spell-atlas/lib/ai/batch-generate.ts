@@ -40,7 +40,7 @@ export const BATCH_TOOL: Anthropic.Tool = {
               type: 'array',
               items: { type: 'string' },
               description:
-                '1-2 tags for this spell. Strongly prefer reusing one of the existing tags listed in the prompt. Only propose a new tag if none of the existing ones fit at all, and only if the concept is general enough to plausibly apply to other spells too (never a tag specific to this one spell).',
+                '1-2 tags. Prefer existing tags. Required when applicable: Hex for non-dud Draining; Enchanting for non-dud Activation; Sigil for useful non-dud Anchor; Support together with Hex when a Draining effect is beneficial. Only invent a new general-purpose tag if none fit.',
             },
             isDud: {
               type: 'boolean',
@@ -102,27 +102,37 @@ The magic system works by combining:
 4. A Control Rune (optional) that changes how mana is paid and/or how concentration works
 
 FIRM MAGIC-SYSTEM RULES -- never bend these for a prettier description:
-- Default cast (no Channeling, no Draining): the spell activates once the mana cost is paid. Do not invent ongoing caster drain or sustained upkeep.
+- Default cast (no special control rune): the spell activates once the mana cost is paid by the caster. Do not invent ongoing caster drain or sustained upkeep.
 - Follow each rune's own meaning text carefully (given below per spell). Prefer that text over assumptions from the rune's name alone.
 - Do not invent mechanics the runes do not support. If a combination is awkward, mark it dud or niche rather than rewriting a rune's meaning.
 - Additional modifiers stack onto the same core effect (e.g. Extend lengthens duration of whatever the spell actually does). They do NOT license changing a modifier's meaning.
 
-CONTROL RUNES -- Channeling vs Draining (both are concentration-related; they are not interchangeable):
+ENCHANTING vs SIGILS (do not confuse these):
+- Enchanting = a spell circle permanently engraved onto an item or surface. Reusable. Anchor is NEVER used for enchanting -- it would be a wasted control rune there.
+- Sigil (Anchor control rune) = the spell circle itself is stuck/glued/anchored to a surface during creation and remains there until it activates once, then the circle dissipates. Temporary, made on the fly -- a pseudo-enchantment, not a true engraving.
+- Example Sigil: Area + Fire + Delayed + Anchor -- stick the circle to a rock, throw it; when the delay ends it detonates as AoE fire (improvised magical grenade). Practical because it is temporary and improvised. A true enchantment of the same idea would skip Anchor and free that slot for Empower (or similar) for a stronger reusable item.
+- If the Control Rune is Anchor: treat the spell as a Sigil. Useful ones should include "Sigil" in the name and use the Sigil tag. Many Anchor combinations are niche; many are duds with little/no practical effect because Anchor adds nothing useful to that pairing. Prefer dud/niche over inventing a permanent enchantment.
+
+CONTROL RUNES -- not interchangeable:
 - Channeling:
-  - The CASTER (or engraved item acting as caster) must continually contribute focus and mana while the effect lasts.
-  - Concentration/attention must be maintained for the whole channeled duration; breaking it ends the spell.
-  - Main purpose: let a spell last longer than normal and/or allow a controlled end to the effect.
-  - Secondary: often a small power boost while channeled -- similar in kind to Empower, but weaker.
-  - Flavor may describe ongoing caster focus/mana feed ONLY when Channeling is present.
+  - The CASTER must continually contribute focus and mana while the effect lasts. Mana is paid by the caster.
+  - Concentration must be maintained for the whole channeled duration; breaking it ends the spell.
+  - Main purpose: longer-than-normal duration and/or a controlled end. Secondary: often a small power boost (weaker than Empower).
+  - HARD DUD: Channeling + Extend is ALWAYS a dud. Duration is already governed by channeling, so Extend is pointless (Alex would never use this). It may not fizzle -- mark isDud true because it is useless, and say so honestly in the description.
 - Draining:
-  - Mana is drawn from whatever the spell is cast by OR cast on (the mana source), not continually from the caster as upkeep.
-  - The caster must maintain concentration during the draining/casting process. If concentration breaks before activation, the spell falls apart and does not activate.
-  - Once enough mana has been gathered and the spell activates, concentration can end -- the effect is then a normal completed cast, not an ongoing channel.
-  - For the caster draining himself, this is mostly like a normal cast. Casting a Draining spell on someone else so THEIR mana pays the activation cost is a HEX in this story -- prefer the Hex tag when that fits.
-  - High-cost exception: if the mana cost is very high, Draining may pull mana gradually until the required amount is reached, then activate. That gradual pull is only to gather the activation cost, not Channeling-style sustained upkeep of an active effect.
-  - Enchanting note: an engraved spell circle already draws activation mana from the item it is on, so Draining is rarely useful for enchanting; it is mainly for hexes.
-- Never describe Channeling behavior (ongoing focus/mana to sustain an active effect) unless the Control Rune is Channeling.
-- Never describe Draining/hex behavior unless the Control Rune is Draining.
+  - Mana is ALWAYS paid by the TARGET (whatever the spell is cast on / draining from) -- NEVER by the caster. Do not write that the caster pays mana for Draining spells.
+  - If cast on the caster himself, he is the target (so he pays as target, not as "caster upkeep"). If cast on someone else, THEY pay -- that is a HEX.
+  - Caster maintains concentration only during the draining/casting process. If concentration breaks before activation, the spell falls apart and does not activate. After activation, focus can shift.
+  - High-cost exception: may pull mana gradually from the target until the activation cost is gathered, then activate. That is not Channeling-style sustain of an active effect.
+  - Tagging: every non-dud Draining spell MUST include the Hex tag. If the hexed effect is beneficial (e.g. Swift on an ally), also include Support -- Hex is not inherently hostile.
+  - Draining is mainly for hexes, not enchanting.
+- Activation:
+  - Primarily for enchanting (engraved reusable circles). Can appear in ordinary casting, but that is less common.
+  - Write descriptions so the spell could work as an enchantment and, secondarily, as a normal cast when that still makes sense.
+  - Tagging: every non-dud Activation spell MUST include the Enchanting tag.
+- Anchor:
+  - Sticks the spell circle to a surface until one-shot activation, then the circle dissipates (Sigil -- see above). Not enchanting. Never describe Anchor spells as engraved/permanent enchantments.
+- Never describe Channeling behavior unless Control is Channeling; never describe Draining/target-paid mana unless Control is Draining; never describe Sigil stick-and-detonate behavior unless Control is Anchor.
 
 EXEMPT modifier -- critical, often mishandled:
 - Exempt means carving a designated subject out of THIS spell's effect, usually by introducing their blood or mana into the casting so the magic recognizes and skips them.
@@ -142,33 +152,44 @@ IMPORTANT -- think creatively about each combination:
 - Creativity must stay inside the firm rules above. Cleverness that breaks Exempt, ritual/spell wording, or Channeling/Draining rules is wrong.
 
 SPELL USEFULNESS TIERS -- choose exactly one:
-- Functional (isDud false, isNiche false): the combination coherently does something a mage would reasonably cast in ordinary circumstances.
-- Niche (isNiche true, isDud false): the combination technically works, but only in extremely narrow, unlikely, or impractical scenarios. Describe the real (limited) effect honestly -- do not pad it into a generally useful spell.
-- Dud (isDud true, isNiche false): the runes lack compatibility and the casting fizzles, collapses, or fails to cohere. Do NOT stretch logic to invent a functional use.
+- Functional (isDud false, isNiche false): something a mage would reasonably cast in ordinary circumstances.
+- Niche (isNiche true, isDud false): technically works, but only in extremely narrow/unlikely/impractical scenarios. Common for many Anchor/Sigil combinations that only barely make sense.
+- Dud (isDud true, isNiche false): either (1) the casting fizzles/fails to cohere, OR (2) it would "work" but is completely useless so Alex would never use it (e.g. Channeling + Extend). Prefer honest uselessness over inventing a strained use.
 - Never set both isDud and isNiche to true.
+- Known hard dud: Control Channeling + modifier Extend -> always isDud true.
 
 NAMING:
 - 2-4 words, evocative and thematic, reflecting the actual effect the runes produce.
 - Do not use cost/economy metaphors in the name (e.g. "Costly", "Expensive") unless a rune explicitly justifies that framing.
 - Do not use "Ritual", "Rite", or "Tempering" in names for these spell circles.
-- For duds, the name may reflect failure or instability. For niche spells, the name should still match the real limited effect, not a fantasized stronger one.
+- If Control is Anchor and the spell is not a dud: include "Sigil" in the name (e.g. "Fireburst Sigil", "Delayfire Sigil").
+- For duds, the name may reflect failure, instability, or pointless redundancy. For niche spells, match the real limited effect.
+
+TAGGING RULES (in addition to purpose tags; still prefer 1-2 tags total, using required tags first):
+- Draining + not dud: MUST include Hex. If the effect is beneficial/ally-facing, also include Support when a second tag slot is available (or prefer Support+Hex over Combat).
+- Activation + not dud: MUST include Enchanting.
+- Anchor + not dud / useful Sigil: MUST include Sigil.
+- Prefer existing tags from the provided list. Only invent a new general-purpose tag if none fit. Do not invent tags that only mean niche/dud.
 
 SELF-CHECK BEFORE SUBMITTING (mandatory):
 For every spell in the batch, verify all of the following and fix any failure before you call the tool:
 1. Description never calls it a ritual/rite/ceremony.
-2. If Exempt is present: description does NOT grant resistance, immunity, wards against, or "steadiness against" the primary effect. Exempt only excludes someone from this spell's effect (or is honestly marked niche/dud).
-3. Channeling/Draining flavor appears only when that control rune is actually present, and matches the definitions above.
-4. Extra modifiers (Extend, Empower, etc.) modify the same coherent effect -- they do not change Exempt into something else.
-5. isDud / isNiche flags match the usefulness tiers.
+2. If Exempt is present: description does NOT grant resistance, immunity, wards against, or "steadiness against" the primary effect.
+3. If Draining: mana is paid by the TARGET, never described as caster-paid; Hex tag present unless dud.
+4. If Channeling: mana/focus from the CASTER; if Extend is also present -> isDud true.
+5. If Activation and not dud: Enchanting tag present; description works as enchantment (and optionally normal cast).
+6. If Anchor: described as a temporary stuck Sigil (one-shot, then dissipates), NOT a permanent engraving; useful ones named/tagged Sigil; many others niche/dud.
+7. Extra modifiers do not rewrite Exempt/Anchor/control meanings.
+8. isDud / isNiche flags match the usefulness tiers.
 
 You will be given a BATCH of multiple spell combinations at once, each with a unique id. For each one, generate:
 - name: 2-4 words, following the naming rules above.
-- description: one to two sentences. Functional: what it does and a practical use. Niche: what it does and why the use-case is narrow. Dud: what happens when cast (fizzle, collapse, no effect, etc.).
+- description: one to two sentences. Functional: what it does and a practical use. Niche: what it does and why the use-case is narrow. Dud: fizzle/collapse OR why the combination is useless.
 - summary: a short tagline (max 50 characters) for a quick-reference table.
-- tags: 1-2 tags categorizing its PRIMARY purpose (Combat, Utility, Support, Hex, Enchanting, etc. -- not usefulness tier). Prefer existing tags; only introduce a new purpose tag if none fit and it could apply to other spells too. Do not invent a tag just to mean niche/dud -- that is what isNiche/isDud are for.
+- tags: 1-2 tags following the tagging rules above.
 - isDud / isNiche: set according to the usefulness tiers above.
 
-Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Defense, Hex, or Enchanting depending on what the base/rune/modifiers actually do.
+Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Hex, Sigil, or Enchanting depending on what the base/rune/modifiers actually do.
 
 Respond ONLY by calling the ${BATCH_TOOL_NAME} tool with one entry per spell id you were given, in the same order, with no ids skipped or invented.`;
 }
@@ -181,7 +202,7 @@ export function buildBatchUserPrompt(spells: SpellRecord[], meanings: RuneMeanin
 
 Generate a name, description, summary, and tags for each of these ${spells.length} spells.
 
-Before calling the tool, re-check every entry against: (a) spell not ritual, (b) Exempt is exclusion not resistance, (c) Channeling/Draining only if present and correctly used, (d) modifiers don't rewrite Exempt.
+Before calling the tool, re-check every entry against: (a) spell not ritual, (b) Exempt is exclusion not resistance, (c) Draining = target pays mana + Hex tag, Channeling = caster pays, (d) Channeling+Extend = dud, (e) Activation non-duds include Enchanting, (f) Anchor = Sigil mechanics/name/tag when useful else niche/dud -- never permanent enchantment.
 
 ${spellBlocks}
 
