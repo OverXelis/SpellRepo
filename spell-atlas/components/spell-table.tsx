@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { RuneLists, SpellStatus, TagInfo } from '@/lib/core/types';
-import type { SearchFilters, SearchResult } from '@/lib/db/spells';
+import type { ContentFilter, SearchFilters, SearchResult } from '@/lib/db/spells';
 import { deleteSpellApi, importDatabase, searchSpellsApi } from '@/lib/api-client';
 import { SpellDetailRow } from '@/components/spell-detail-row';
 import {
@@ -17,11 +17,20 @@ interface Props {
   runeLists: RuneLists;
   tags: TagInfo[];
   onDataChanged: () => void;
+  /** Optional controlled content filter (filled / unfilled). */
+  contentFilter?: '' | ContentFilter;
+  onContentFilterChange?: (value: '' | ContentFilter) => void;
 }
 
 const PAGE_SIZE = 25;
 
-export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
+export function SpellTable({
+  runeLists,
+  tags,
+  onDataChanged,
+  contentFilter: controlledContent,
+  onContentFilterChange,
+}: Props) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [status, setStatus] = useState<'' | SpellStatus>('');
@@ -30,6 +39,12 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
   const [primaryRune, setPrimaryRune] = useState('');
   const [modifierRune, setModifierRune] = useState('');
   const [controlRune, setControlRune] = useState('');
+  const [uncontrolledContent, setUncontrolledContent] = useState<'' | ContentFilter>('');
+  const content = controlledContent !== undefined ? controlledContent : uncontrolledContent;
+  const setContent = (value: '' | ContentFilter) => {
+    onContentFilterChange?.(value);
+    if (controlledContent === undefined) setUncontrolledContent(value);
+  };
   const [offset, setOffset] = useState(0);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +69,7 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
     () => ({
       query: debouncedQuery || undefined,
       status: status || undefined,
+      content: content || undefined,
       tags: tagFilter ? [tagFilter] : undefined,
       circleBase: circleBase || undefined,
       primaryRune: primaryRune || undefined,
@@ -62,7 +78,7 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
       limit: PAGE_SIZE,
       offset,
     }),
-    [debouncedQuery, status, tagFilter, circleBase, primaryRune, modifierRune, controlRune, offset]
+    [debouncedQuery, status, content, tagFilter, circleBase, primaryRune, modifierRune, controlRune, offset]
   );
 
   const load = async () => {
@@ -87,6 +103,7 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
   const clearFilters = () => {
     setQuery('');
     setStatus('');
+    setContent('');
     setTagFilter('');
     setCircleBase('');
     setPrimaryRune('');
@@ -94,7 +111,9 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
     setControlRune('');
   };
 
-  const activeFilterCount = [status, tagFilter, circleBase, primaryRune, modifierRune, controlRune].filter(Boolean).length;
+  const activeFilterCount = [status, content, tagFilter, circleBase, primaryRune, modifierRune, controlRune].filter(
+    Boolean
+  ).length;
   const hasFilters = query || activeFilterCount > 0;
 
   const handleExport = () => {
@@ -131,6 +150,16 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
         <option value="normal">Normal</option>
         <option value="niche">Niche</option>
         <option value="dud">Duds</option>
+      </select>
+      <select
+        value={content}
+        onChange={(e) => withPageReset(setContent)(e.target.value as '' | ContentFilter)}
+        className="ui-select-sm w-full sm:w-auto"
+        title="Filter by whether name, summary, and description are filled in"
+      >
+        <option value="">All content</option>
+        <option value="filled">Filled in</option>
+        <option value="unfilled">Not filled in</option>
       </select>
       <select
         value={tagFilter}

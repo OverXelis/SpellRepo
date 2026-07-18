@@ -29,7 +29,9 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
     });
   };
 
-  if (totalEntries === 0) {
+  const hasInProgressBatch = batches.some((batch) => !batch.completedAt);
+
+  if (totalEntries === 0 && !hasInProgressBatch) {
     return (
       <div className="ui-panel">
         <h2 className="ui-panel-header">Recent contemplation</h2>
@@ -46,7 +48,9 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
         <div>
           <h2 className="ui-panel-header">Recent contemplation</h2>
           <p className="mt-1 text-sm text-foreground-muted">
-            {totalEntries} spell{totalEntries === 1 ? '' : 's'} from your latest batch run{batches.length === 1 ? '' : 's'}.
+            {totalEntries === 0
+              ? 'Waiting for generated spells from the current run…'
+              : `${totalEntries} spell${totalEntries === 1 ? '' : 's'} from your latest batch run${batches.length === 1 ? '' : 's'}.`}{' '}
             Spell fields autosave to the database as you edit; this review list is a browser-side checklist (kept across
             reloads on this device).
           </p>
@@ -68,7 +72,9 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
               </p>
               <p className="text-xs text-foreground-muted">
                 {batch.entries.length} spell{batch.entries.length === 1 ? '' : 's'}
-                {batch.completedAt ? ` -- finished ${new Date(batch.completedAt).toLocaleTimeString()}` : ''}
+                {batch.completedAt
+                  ? ` -- finished ${new Date(batch.completedAt).toLocaleTimeString()}`
+                  : ' -- generation in progress…'}
               </p>
             </div>
             <button type="button" onClick={() => onClearBatch(batch.id)} className="ui-btn-sm ui-btn-ghost">
@@ -91,16 +97,26 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
                   </tr>
                 </thead>
                 <tbody>
-                  {batch.entries.map((entry) => (
-                    <ReviewRow
-                      key={entry.id}
-                      entry={entry}
-                      expanded={expandedIds.has(entry.id)}
-                      availableTags={availableTags}
-                      onToggle={() => toggleExpanded(entry.id)}
-                      onEntryUpdated={onEntryUpdated}
-                    />
-                  ))}
+                  {batch.entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-sm text-foreground-subtle">
+                        {batch.completedAt
+                          ? 'No spells were added to this review batch.'
+                          : 'Spells will appear here as they are generated…'}
+                      </td>
+                    </tr>
+                  ) : (
+                    batch.entries.map((entry) => (
+                      <ReviewRow
+                        key={entry.id}
+                        entry={entry}
+                        expanded={expandedIds.has(entry.id)}
+                        availableTags={availableTags}
+                        onToggle={() => toggleExpanded(entry.id)}
+                        onEntryUpdated={onEntryUpdated}
+                      />
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

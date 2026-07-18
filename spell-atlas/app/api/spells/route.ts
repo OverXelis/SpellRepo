@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
-import { searchSpells, type SearchFilters } from '@/lib/db/spells';
+import { searchSpells, type ContentFilter, type SearchFilters } from '@/lib/db/spells';
 import type { SpellStatus } from '@/lib/core/types';
 import { withErrorHandling } from '@/lib/api-utils';
 
@@ -28,6 +28,9 @@ function parseFilters(params: URLSearchParams): SearchFilters {
 
   const status = params.get('status');
   if (status) filters.status = status as SpellStatus;
+
+  const content = params.get('content');
+  if (content === 'filled' || content === 'unfilled') filters.content = content as ContentFilter;
 
   if (params.get('needsEnrichment') === 'true') filters.needsEnrichment = true;
 

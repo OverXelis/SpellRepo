@@ -32,54 +32,57 @@ export default function ContemplatePage() {
     setReviewBatches([]);
   };
 
-  const handleClearBatch = (batchId: string) => {
-    const next = loadReviewBatches().filter((batch) => batch.id !== batchId);
+  const commitReviewBatches = useCallback((next: GeneratedReviewBatch[]) => {
     saveReviewBatches(next);
     setReviewBatches(next);
+  }, []);
+
+  const handleClearBatch = (batchId: string) => {
+    commitReviewBatches(reviewBatches.filter((batch) => batch.id !== batchId));
   };
 
   const handleEntryUpdated = async (spellId: string) => {
     const spell = await getSpell(spellId);
-    const next = loadReviewBatches().map((batch) => ({
-      ...batch,
-      entries: batch.entries.map((entry) =>
-        entry.id === spellId
-          ? {
-              ...entry,
-              name: spell.customName.trim() || entry.name,
-              summary: spell.summary,
-              description: spell.description,
-              tags: spell.tags,
-              status: spell.status,
-            }
-          : entry
-      ),
-    }));
-    saveReviewBatches(next);
-    setReviewBatches(next);
+    commitReviewBatches(
+      reviewBatches.map((batch) => ({
+        ...batch,
+        entries: batch.entries.map((entry) =>
+          entry.id === spellId
+            ? {
+                ...entry,
+                name: spell.customName.trim() || entry.name,
+                summary: spell.summary,
+                description: spell.description,
+                tags: spell.tags,
+                status: spell.status,
+              }
+            : entry
+        ),
+      }))
+    );
     reload();
   };
 
   const handleBulkDudsApplied = (result: BulkDudResponse) => {
     const updated = new Set(result.updatedIds ?? []);
     if (updated.size > 0) {
-      const next = loadReviewBatches().map((batch) => ({
-        ...batch,
-        entries: batch.entries.map((entry) =>
-          updated.has(entry.id)
-            ? {
-                ...entry,
-                name: result.customName,
-                summary: result.text,
-                description: result.text,
-                tags: [],
-                status: 'dud' as const,
-              }
-            : entry
-        ),
-      }));
-      saveReviewBatches(next);
-      setReviewBatches(next);
+      commitReviewBatches(
+        reviewBatches.map((batch) => ({
+          ...batch,
+          entries: batch.entries.map((entry) =>
+            updated.has(entry.id)
+              ? {
+                  ...entry,
+                  name: result.customName,
+                  summary: result.text,
+                  description: result.text,
+                  tags: [],
+                  status: 'dud' as const,
+                }
+              : entry
+          ),
+        }))
+      );
     }
     reload();
   };
@@ -98,6 +101,8 @@ export default function ContemplatePage() {
         {taxonomy && (
           <div className="flex flex-wrap gap-2">
             <span className="ui-badge ui-badge-accent">{taxonomy.totalSpellCount} spells</span>
+            <span className="ui-badge ui-badge-primary">{taxonomy.contentCounts.filled} filled</span>
+            <span className="ui-badge ui-badge-muted">{taxonomy.contentCounts.unfilled} unfilled</span>
             <span className="ui-badge ui-badge-primary">{taxonomy.statusCounts.favorite} favorites</span>
             <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.niche} niche</span>
             <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.dud} duds</span>
@@ -120,6 +125,7 @@ export default function ContemplatePage() {
           <BulkDudPanel runeLists={taxonomy.runeLists} onApplied={handleBulkDudsApplied} />
           <BatchGeneratePanel
             runeLists={taxonomy.runeLists}
+            reviewBatches={reviewBatches}
             onDataChanged={reload}
             onReviewUpdated={setReviewBatches}
           />

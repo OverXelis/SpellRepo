@@ -385,6 +385,10 @@ function sanitizeFtsQuery(query: string): string | null {
   return tokens.map((t) => `"${t.replace(/"/g, '')}"*`).join(' ');
 }
 
+/** Whether a spell has author/AI-written content (name + summary + description).
+ * Distinct from needsEnrichment, which also considers tags for generation. */
+export type ContentFilter = 'filled' | 'unfilled';
+
 export interface SearchFilters {
   query?: string;
   tags?: string[];
@@ -394,12 +398,17 @@ export interface SearchFilters {
   modifierRunes?: string[];
   controlRune?: string | null; // null / 'none' means "no control rune"
   status?: SpellStatus;
+  /** Filter by whether name, summary, and description are all filled in. */
+  content?: ContentFilter;
   /** Only spells missing at least one of customName/description/summary/
    * tags -- i.e. candidates for the AI batch description generator. */
   needsEnrichment?: boolean;
   limit?: number;
   offset?: number;
 }
+
+/** SQL predicate: spell has custom name, summary, and description. */
+export const FILLED_CONTENT_SQL = `(s.custom_name != '' AND s.summary != '' AND s.description != '')`;
 
 export interface SearchResult {
   results: SpellSummaryRecord[];
@@ -465,12 +474,17 @@ function buildWhere(db: Database.Database, filters: SearchFilters): { where: str
       params.push(ftsQuery);
     }
   }
+  if (filters.content === 'filled') {
+    clauses.push(FILLED_CONTENT_SQL);
+  } else if (filters.content === 'unfilled') {
+    clauses.push(`NOT ${FILLED_CONTENT_SQL}`);
+  }
   if (filters.needsEnrichment) {
     // Duds intentionally have no purpose tags (they are cleared on dud status),
     // so empty tags must not keep re-queueing them for Contemplate generation.
     clauses.push(
       `NOT (
-        s.custom_name != '' AND s.summary != '' AND s.description != ''
+        ${FILLED_CONTENT_SQL}
         AND (
           s.status = 'dud'
           OR EXISTS (SELECT 1 FROM spell_tags st WHERE st.spell_id = s.id)
@@ -556,6 +570,20 @@ export function countByStatus(db: Database.Database): Record<SpellStatus, number
   const result: Record<SpellStatus, number> = { normal: 0, favorite: 0, dud: 0, niche: 0 };
   for (const row of rows) result[row.status] = row.c;
   return result;
+}
+
+export interface ContentCounts {
+  filled: number;
+  unfilled: number;
+}
+
+/** Counts spells that have name+summary+description filled vs still blank. */
+export function countByContent(db: Database.Database): ContentCounts {
+  const filled = (
+    db.prepare(`SELECT COUNT(*) as c FROM spells s WHERE ${FILLED_CONTENT_SQL}`).get() as { c: number }
+  ).c;
+  const total = countAllSpells(db);
+  return { filled, unfilled: Math.max(0, total - filled) };
 }
 
 export type DudMarkReason = 'fails_to_cast' | 'no_functional_use';
