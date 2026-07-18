@@ -24,3 +24,9 @@ pick_newer "$PUBLIC/logo.png" "$PUBLIC/LOGO.PNG"
 pick_newer "$PUBLIC/name-banner.png" "$PUBLIC/NamePNG.png"
 pick_newer "$PUBLIC/name-banner.png" "$PUBLIC/namePNG.png"
 pick_newer "$PUBLIC/name-banner.png" "$PUBLIC/Name.png"
+
+if [[ -f "$PUBLIC/logo.png" ]]; then
+  cp "$PUBLIC/logo.png" app/icon.png
+  cp "$PUBLIC/logo.png" app/apple-icon.png
+  echo "normalize-branding: synced logo.png -> app/icon.png and app/apple-icon.png"
+fi

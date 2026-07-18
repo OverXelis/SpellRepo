@@ -2,13 +2,13 @@ import Image from 'next/image';
 
 export function PageBanner() {
   return (
-    <div className="mb-5 overflow-hidden rounded-lg border border-border-subtle bg-black">
+    <div className="mb-6 flex w-full justify-center">
       <Image
         src="/name-banner.png"
         alt="Spell Weaver Chronicles"
-        width={640}
-        height={120}
-        className="h-auto w-full max-h-24 object-contain object-left sm:max-h-28"
+        width={1920}
+        height={1080}
+        className="h-auto w-full max-w-4xl max-h-36 object-contain object-center sm:max-h-44 md:max-h-52"
         priority
       />
     </div>

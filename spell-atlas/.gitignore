@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated from public/logo.png by scripts/normalize-branding.sh
+/app/icon.png
+/app/apple-icon.png
