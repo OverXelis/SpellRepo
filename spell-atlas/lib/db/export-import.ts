@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
-import type { RuneKind, RuneLists, RuneNameConfig, SpellRecord, SpellStatus } from '@/lib/core/types';
+import type { RuneKind, RuneLists, RuneMeaningConfig, RuneNameConfig, SpellRecord, SpellStatus } from '@/lib/core/types';
 import { clearAllSpells, getSpellsByIds, getAllSpellIds, insertFullSpells } from '@/lib/db/spells';
-import { getRuneLists, getRuneNameConfig } from '@/lib/db/naming';
+import { getRuneLists, getRuneMeanings, getRuneNameConfig } from '@/lib/db/naming';
 import { getAllTags } from '@/lib/db/tags';
 
 export interface ExportPayload {
@@ -12,6 +12,8 @@ export interface ExportPayload {
    * Maps tag name -> category, for tags that have one. */
   tagCategories?: Record<string, string>;
   runeNameConfig: RuneNameConfig;
+  /** Optional -- absent in older exports. AI-context notes per rune. */
+  runeMeanings?: RuneMeaningConfig;
   exportedAt: string;
 }
 
@@ -28,6 +30,7 @@ export function exportAll(db: Database.Database): ExportPayload {
     availableTags: allTags.map((t) => t.name),
     tagCategories,
     runeNameConfig: getRuneNameConfig(db),
+    runeMeanings: getRuneMeanings(db),
     exportedAt: new Date().toISOString(),
   };
 }
@@ -65,7 +68,14 @@ export function importAll(db: Database.Database, jsonString: string): { success:
       controlNames: {},
     };
 
-    const insertRune = db.prepare('INSERT OR IGNORE INTO runes (kind, name, display_name, sort_order) VALUES (?, ?, ?, ?)');
+    const meaningsConfig = data.runeMeanings ?? {
+      circleBaseMeanings: {},
+      primaryMeanings: {},
+      modifierMeanings: {},
+      controlMeanings: {},
+    };
+
+    const insertRune = db.prepare('INSERT OR IGNORE INTO runes (kind, name, display_name, meaning, sort_order) VALUES (?, ?, ?, ?, ?)');
     const kindLists: Record<RuneKind, string[]> = {
       circleBase: runeLists.circleBases ?? [],
       primary: runeLists.primaryRunes ?? [],
@@ -75,10 +85,20 @@ export function importAll(db: Database.Database, jsonString: string): { success:
     for (const kind of RUNE_KINDS) {
       kindLists[kind].forEach((name, i) => {
         let displayName = '';
-        if (kind === 'primary') displayName = namingConfig.primaryNames?.[name] ?? '';
-        else if (kind === 'modifier') displayName = namingConfig.modifierNames?.[name] ?? '';
-        else if (kind === 'control') displayName = namingConfig.controlNames?.[name] ?? '';
-        insertRune.run(kind, name, displayName, i);
+        let meaning = '';
+        if (kind === 'primary') {
+          displayName = namingConfig.primaryNames?.[name] ?? '';
+          meaning = meaningsConfig.primaryMeanings?.[name] ?? '';
+        } else if (kind === 'modifier') {
+          displayName = namingConfig.modifierNames?.[name] ?? '';
+          meaning = meaningsConfig.modifierMeanings?.[name] ?? '';
+        } else if (kind === 'control') {
+          displayName = namingConfig.controlNames?.[name] ?? '';
+          meaning = meaningsConfig.controlMeanings?.[name] ?? '';
+        } else if (kind === 'circleBase') {
+          meaning = meaningsConfig.circleBaseMeanings?.[name] ?? '';
+        }
+        insertRune.run(kind, name, displayName, meaning, i);
       });
     }
 

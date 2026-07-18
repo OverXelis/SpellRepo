@@ -48,6 +48,17 @@ export interface RuneNameConfig {
   controlNames: Record<string, string>;
 }
 
+/** Free-text "what this conceptually does" notes per rune, keyed by rune
+ * name within each kind. Distinct from RuneNameConfig -- this isn't used
+ * for spell naming, only as context fed to the AI batch description
+ * generator (see lib/ai/batch-generate.ts). */
+export interface RuneMeaningConfig {
+  circleBaseMeanings: Record<string, string>;
+  primaryMeanings: Record<string, string>;
+  modifierMeanings: Record<string, string>;
+  controlMeanings: Record<string, string>;
+}
+
 export interface TagInfo {
   name: string;
   category: string | null;

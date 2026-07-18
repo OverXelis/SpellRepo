@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { RuneKind, RuneLists, RuneNameConfig } from '@/lib/core/types';
+import type { RuneKind, RuneLists, RuneMeaningConfig, RuneNameConfig } from '@/lib/core/types';
 import {
   addRuneApi,
   getRuneAffectedCountApi,
@@ -9,6 +9,7 @@ import {
   renameRuneApi,
   setModifierPairNameApi,
   setRuneDisplayNameApi,
+  setRuneMeaningApi,
   undoLastBatchApi,
 } from '@/lib/api-client';
 import { getAllModifierPairKeys, parseModifierPairKey } from '@/lib/core/spell-name-generator';
@@ -23,6 +24,7 @@ const KIND_LABEL: Record<RuneKind, string> = {
 interface Props {
   runeLists: RuneLists;
   runeNameConfig: RuneNameConfig;
+  runeMeanings: RuneMeaningConfig;
   onChanged: () => void;
 }
 
@@ -30,16 +32,21 @@ function RuneRow({
   kind,
   name,
   displayName,
+  meaning,
+  showDisplayName,
   onChanged,
 }: {
   kind: RuneKind;
   name: string;
   displayName: string;
+  meaning: string;
+  showDisplayName: boolean;
   onChanged: () => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(name);
   const [displayValue, setDisplayValue] = useState(displayName);
+  const [meaningValue, setMeaningValue] = useState(meaning);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [affectedCount, setAffectedCount] = useState<number | null>(null);
   const [countLoading, setCountLoading] = useState(false);
@@ -50,6 +57,17 @@ function RuneRow({
     setBusy(true);
     try {
       await setRuneDisplayNameApi(kind, name, displayValue);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveMeaning = async () => {
+    if (meaningValue === meaning) return;
+    setBusy(true);
+    try {
+      await setRuneMeaningApi(kind, name, meaningValue);
       onChanged();
     } finally {
       setBusy(false);
@@ -96,72 +114,86 @@ function RuneRow({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-900/50 px-2 py-1.5 text-sm">
-      {editingName ? (
-        <input
-          autoFocus
-          value={nameValue}
-          onChange={(e) => setNameValue(e.target.value)}
-          onBlur={saveRename}
-          onKeyDown={(e) => e.key === 'Enter' && saveRename()}
-          className="w-28 rounded bg-neutral-950 px-1.5 py-0.5 text-neutral-100 outline-none border border-neutral-700"
-        />
-      ) : (
-        <button
-          className="min-w-[6rem] text-left font-medium text-neutral-100 hover:underline"
-          onClick={() => setEditingName(true)}
-          title="Click to rename"
-        >
-          {name}
-        </button>
-      )}
-      <span className="text-neutral-600">→</span>
-      <input
-        value={displayValue}
-        onChange={(e) => setDisplayValue(e.target.value)}
-        onBlur={saveDisplayName}
-        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        placeholder="display name"
-        className="w-32 rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-neutral-300 outline-none border border-neutral-800 focus:border-neutral-600"
-      />
-      {confirmingDelete ? (
-        <span className="flex items-center gap-1 text-xs">
-          <span className="text-red-400">
-            {countLoading
-              ? 'Checking affected spells...'
-              : affectedCount === null
-              ? 'Delete? (could not check affected spells)'
-              : affectedCount > 0
-              ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
-              : `Delete "${name}"? (0 spells affected)`}
+    <div className="rounded border border-neutral-800 bg-neutral-900/50 px-2 py-1.5 text-sm space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        {editingName ? (
+          <input
+            autoFocus
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={saveRename}
+            onKeyDown={(e) => e.key === 'Enter' && saveRename()}
+            className="w-28 rounded bg-neutral-950 px-1.5 py-0.5 text-neutral-100 outline-none border border-neutral-700"
+          />
+        ) : (
+          <button
+            className="min-w-[6rem] text-left font-medium text-neutral-100 hover:underline"
+            onClick={() => setEditingName(true)}
+            title="Click to rename"
+          >
+            {name}
+          </button>
+        )}
+        {showDisplayName && (
+          <>
+            <span className="text-neutral-600">→</span>
+            <input
+              value={displayValue}
+              onChange={(e) => setDisplayValue(e.target.value)}
+              onBlur={saveDisplayName}
+              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              placeholder="display name"
+              className="w-32 rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-neutral-300 outline-none border border-neutral-800 focus:border-neutral-600"
+            />
+          </>
+        )}
+        {confirmingDelete ? (
+          <span className="flex items-center gap-1 text-xs">
+            <span className="text-red-400">
+              {countLoading
+                ? 'Checking affected spells...'
+                : affectedCount === null
+                ? 'Delete? (could not check affected spells)'
+                : affectedCount > 0
+                ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
+                : `Delete "${name}"? (0 spells affected)`}
+            </span>
+            <button
+              onClick={handleDelete}
+              disabled={busy || countLoading}
+              className="rounded bg-red-900/60 px-1.5 py-0.5 text-red-200 disabled:opacity-50"
+            >
+              Yes, delete
+            </button>
+            <button
+              onClick={() => {
+                setConfirmingDelete(false);
+                setAffectedCount(null);
+              }}
+              className="rounded bg-neutral-800 px-1.5 py-0.5"
+            >
+              Cancel
+            </button>
           </span>
-          <button
-            onClick={handleDelete}
-            disabled={busy || countLoading}
-            className="rounded bg-red-900/60 px-1.5 py-0.5 text-red-200 disabled:opacity-50"
-          >
-            Yes, delete
+        ) : (
+          <button onClick={startDeleteConfirm} className="text-xs text-neutral-500 hover:text-red-400">
+            delete
           </button>
-          <button
-            onClick={() => {
-              setConfirmingDelete(false);
-              setAffectedCount(null);
-            }}
-            className="rounded bg-neutral-800 px-1.5 py-0.5"
-          >
-            Cancel
-          </button>
-        </span>
-      ) : (
-        <button onClick={startDeleteConfirm} className="text-xs text-neutral-500 hover:text-red-400">
-          delete
-        </button>
-      )}
+        )}
+      </div>
+      <input
+        value={meaningValue}
+        onChange={(e) => setMeaningValue(e.target.value)}
+        onBlur={saveMeaning}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        placeholder="AI context: what this conceptually does (used by batch description generation)"
+        className="w-full rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-neutral-500 outline-none border border-transparent hover:border-neutral-800 focus:border-neutral-700 focus:text-neutral-300"
+      />
     </div>
   );
 }
 
-export function RunePanel({ runeLists, runeNameConfig, onChanged }: Props) {
+export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }: Props) {
   const [kind, setKind] = useState<RuneKind>('primary');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -245,15 +277,31 @@ export function RunePanel({ runeLists, runeNameConfig, onChanged }: Props) {
             k === 'circleBase' ? runeLists.circleBases : k === 'primary' ? runeLists.primaryRunes : k === 'modifier' ? runeLists.modifierRunes : runeLists.controlRunes;
           const nameMap =
             k === 'primary' ? runeNameConfig.primaryNames : k === 'modifier' ? runeNameConfig.modifierNames : k === 'control' ? runeNameConfig.controlNames : {};
+          const meaningMap =
+            k === 'circleBase'
+              ? runeMeanings.circleBaseMeanings
+              : k === 'primary'
+              ? runeMeanings.primaryMeanings
+              : k === 'modifier'
+              ? runeMeanings.modifierMeanings
+              : runeMeanings.controlMeanings;
           return (
             <div key={k}>
               <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 {KIND_LABEL[k]} ({names.length})
               </h3>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 {names.length === 0 && <span className="text-xs italic text-neutral-600">none yet</span>}
                 {names.map((n) => (
-                  <RuneRow key={n} kind={k} name={n} displayName={nameMap[n] ?? ''} onChanged={onChanged} />
+                  <RuneRow
+                    key={n}
+                    kind={k}
+                    name={n}
+                    displayName={nameMap[n] ?? ''}
+                    meaning={meaningMap[n] ?? ''}
+                    showDisplayName={k !== 'circleBase'}
+                    onChanged={onChanged}
+                  />
                 ))}
               </div>
             </div>

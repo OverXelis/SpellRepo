@@ -390,6 +390,9 @@ export interface SearchFilters {
   modifierRunes?: string[];
   controlRune?: string | null; // null / 'none' means "no control rune"
   status?: SpellStatus;
+  /** Only spells missing at least one of customName/description/summary/
+   * tags -- i.e. candidates for the AI batch description generator. */
+  needsEnrichment?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -458,6 +461,14 @@ function buildWhere(db: Database.Database, filters: SearchFilters): { where: str
       params.push(ftsQuery);
     }
   }
+  if (filters.needsEnrichment) {
+    clauses.push(
+      `NOT (
+        s.custom_name != '' AND s.summary != '' AND s.description != ''
+        AND EXISTS (SELECT 1 FROM spell_tags st WHERE st.spell_id = s.id)
+      )`
+    );
+  }
 
   return { where: clauses.join(' AND '), params };
 }
@@ -493,6 +504,34 @@ export function searchSpells(db: Database.Database, filters: SearchFilters): Sea
     limit,
     offset,
   };
+}
+
+/** Counts spells needing enrichment under a given filter set, without the
+ * MAX_LIMIT cap that applies to searchSpells() -- that cap exists to keep
+ * the AI chat's context small, which isn't a concern here. */
+export function countNeedingEnrichment(db: Database.Database, filters: Omit<SearchFilters, 'limit' | 'offset'>): number {
+  const { where, params } = buildWhere(db, { ...filters, needsEnrichment: true });
+  const row = db.prepare(`SELECT COUNT(*) as c FROM spells s WHERE ${where}`).get(...params) as { c: number };
+  return row.c;
+}
+
+/** Fetches full spell records (not just the compact summary shape) needing
+ * enrichment, up to `limit`, oldest first -- used by the batch description
+ * generator, which needs full field values to know what's already filled
+ * in and to build AI context. */
+export function getSpellsForEnrichment(
+  db: Database.Database,
+  filters: Omit<SearchFilters, 'limit' | 'offset'>,
+  limit: number
+): SpellRecord[] {
+  const { where, params } = buildWhere(db, { ...filters, needsEnrichment: true });
+  const rows = db
+    .prepare(`SELECT * FROM spells s WHERE ${where} ORDER BY s.created_at ASC LIMIT ?`)
+    .all(...params, limit) as SpellRow[];
+  const ids = rows.map((r) => r.id);
+  const modifiersMap = getModifiersForMany(db, ids);
+  const tagsMap = getTagsForMany(db, ids);
+  return rows.map((row) => rowToRecord(row, modifiersMap.get(row.id) ?? [], tagsMap.get(row.id) ?? []));
 }
 
 export function countAllSpells(db: Database.Database): number {
