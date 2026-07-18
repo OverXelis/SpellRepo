@@ -52,10 +52,18 @@ function RuneRow({
   const [nameValue, setNameValue] = useState(name);
   const [displayValue, setDisplayValue] = useState(displayName);
   const [meaningValue, setMeaningValue] = useState(meaning);
+  const [showContext, setShowContext] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [affectedCount, setAffectedCount] = useState<number | null>(null);
   const [countLoading, setCountLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const toggleContext = () => {
+    setShowContext((open) => {
+      if (!open) setMeaningValue(meaning);
+      return !open;
+    });
+  };
 
   const saveDisplayName = async () => {
     if (displayValue === displayName) return;
@@ -120,78 +128,97 @@ function RuneRow({
 
   return (
     <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2.5 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        {editingName ? (
-          <input
-            autoFocus
-            value={nameValue}
-            onChange={(e) => setNameValue(e.target.value)}
-            onBlur={saveRename}
-            onKeyDown={(e) => e.key === 'Enter' && saveRename()}
-            className="ui-input-sm w-32"
-          />
-        ) : (
-          <button
-            type="button"
-            className="min-w-[6rem] text-left font-medium text-foreground hover:text-accent"
-            onClick={() => setEditingName(true)}
-            title="Click to rename"
-          >
-            {name}
-          </button>
-        )}
-        {showDisplayName && (
-          <>
-            <ArrowRightIcon className="text-foreground-subtle" />
+      <div className="flex items-start gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          {editingName ? (
             <input
-              value={displayValue}
-              onChange={(e) => setDisplayValue(e.target.value)}
-              onBlur={saveDisplayName}
-              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-              placeholder="display name"
-              className="ui-input-sm w-36 text-xs"
+              autoFocus
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={saveRename}
+              onKeyDown={(e) => e.key === 'Enter' && saveRename()}
+              className="ui-input-sm w-32"
             />
-          </>
-        )}
-        {confirmingDelete ? (
-          <span className="flex flex-wrap items-center gap-1 text-xs">
-            <span className="text-red-300">
-              {countLoading
-                ? 'Checking affected spells...'
-                : affectedCount === null
-                ? 'Delete? (could not check affected spells)'
-                : affectedCount > 0
-                ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
-                : `Delete "${name}"? (0 spells affected)`}
-            </span>
-            <button type="button" onClick={handleDelete} disabled={busy || countLoading} className="ui-btn-sm ui-btn-danger">
-              Yes, delete
-            </button>
+          ) : (
             <button
               type="button"
-              onClick={() => {
-                setConfirmingDelete(false);
-                setAffectedCount(null);
-              }}
-              className="ui-btn-sm ui-btn-secondary"
+              className="min-w-[6rem] text-left font-medium text-foreground hover:text-accent"
+              onClick={() => setEditingName(true)}
+              title="Click to rename"
             >
-              Cancel
+              {name}
             </button>
-          </span>
-        ) : (
-          <button type="button" onClick={startDeleteConfirm} className="ui-btn-sm ui-btn-ghost text-red-400">
-            Delete
+          )}
+          {showDisplayName && (
+            <>
+              <ArrowRightIcon className="text-foreground-subtle" />
+              <input
+                value={displayValue}
+                onChange={(e) => setDisplayValue(e.target.value)}
+                onBlur={saveDisplayName}
+                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                placeholder="display name"
+                className="ui-input-sm min-w-0 flex-1 text-xs sm:max-w-xs"
+              />
+            </>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleContext}
+            className={`ui-btn-sm ${showContext || meaning.trim() ? 'ui-btn-secondary' : 'ui-btn-ghost'}`}
+            aria-expanded={showContext}
+          >
+            Context
           </button>
-        )}
+          {!confirmingDelete && (
+            <button type="button" onClick={startDeleteConfirm} className="ui-btn-sm ui-btn-ghost text-red-400">
+              Delete
+            </button>
+          )}
+        </div>
       </div>
-      <input
-        value={meaningValue}
-        onChange={(e) => setMeaningValue(e.target.value)}
-        onBlur={saveMeaning}
-        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        placeholder="AI context: what this conceptually does (used by batch description generation)"
-        className="ui-input-sm mt-2 border-transparent bg-background text-xs text-foreground-muted hover:border-border focus:text-foreground"
-      />
+
+      {confirmingDelete && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-red-300">
+            {countLoading
+              ? 'Checking affected spells...'
+              : affectedCount === null
+              ? `Delete "${name}"? (could not check affected spells)`
+              : affectedCount > 0
+              ? `Delete "${name}" and ${affectedCount} spell${affectedCount === 1 ? '' : 's'}?`
+              : `Delete "${name}"? (0 spells affected)`}
+          </span>
+          <button type="button" onClick={handleDelete} disabled={busy || countLoading} className="ui-btn-sm ui-btn-danger">
+            Yes, delete
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmingDelete(false);
+              setAffectedCount(null);
+            }}
+            className="ui-btn-sm ui-btn-secondary"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {showContext && (
+        <textarea
+          autoFocus
+          value={meaningValue}
+          onChange={(e) => setMeaningValue(e.target.value)}
+          onBlur={saveMeaning}
+          placeholder="AI context: what this conceptually does (used by batch description generation)"
+          rows={3}
+          className="ui-input mt-2 w-full resize-y text-sm"
+        />
+      )}
     </div>
   );
 }
