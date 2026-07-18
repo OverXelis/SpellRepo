@@ -29,7 +29,7 @@ spell-atlas/           The app — deploy this
   app/                 Next.js pages (Builder, Contemplate, Chat)
   components/          UI
   lib/                 Domain logic, SQLite layer, Claude integration
-  public/              Static assets (logo.png, name-banner.png)
+  public/              Static assets (logo.png, name-banner.png; Logo.png and NamePNG.png also accepted)
   scripts/             Migration helpers
   docker-compose.yml   Portainer / Docker Compose stack
 

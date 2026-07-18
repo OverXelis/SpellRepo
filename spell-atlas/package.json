@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "bash scripts/normalize-branding.sh",
+    "prebuild": "bash scripts/normalize-branding.sh",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
