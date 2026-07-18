@@ -155,10 +155,10 @@ export function BulkDudPanel({ runeLists, onApplied }: Props) {
           className="ui-select-sm"
           disabled={applying}
         >
-          <option value="">Any / no first modifier</option>
+          <option value="">Any first modifier</option>
           {availableModifier1.map((m) => (
             <option key={m} value={m}>
-              {m}
+              Must include {m}
             </option>
           ))}
         </select>
@@ -168,10 +168,10 @@ export function BulkDudPanel({ runeLists, onApplied }: Props) {
           className="ui-select-sm"
           disabled={applying || !modifier1}
         >
-          <option value="">Any / no second modifier</option>
+          <option value="">Any second modifier</option>
           {availableModifier2.map((m) => (
             <option key={m} value={m}>
-              {m}
+              Must include {m}
             </option>
           ))}
         </select>
