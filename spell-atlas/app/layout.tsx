@@ -16,11 +16,8 @@ export const metadata: Metadata = {
   title: "Spell Atlas",
   description: "Self-hosted spell database and AI research assistant for Spell Weaver Chronicles",
   icons: {
-    icon: [
-      { url: "/logo.png", type: "image/png" },
-      { url: "/logo.svg", type: "image/svg+xml" },
-    ],
-    apple: [{ url: "/logo.png", type: "image/png" }],
+    icon: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
   },
 };
 
