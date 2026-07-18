@@ -1,61 +1,88 @@
 # Spell Atlas
 
-A self-hosted rebuild of the `spell-circle-db` rune/spell tool, with two views:
+Self-hosted spell database and AI research assistant for the **Spell Weaver Chronicles** rune magic system.
 
-- **Builder** (`/builder`) — add runes, auto-generate every valid spell combination (same combinatorial logic as the original app), then search/filter/tag/curate them, plus a batched AI description generator (see below) for filling in the flood of auto-generated combinations.
-- **Chat** (`/chat`) — describe a scene or goal in prose; Claude searches the database (read-only, via tool calls) and suggests spells that fit.
+Run it once on your NAS or homelab, open it from any device on your Tailscale network, and work from one shared SQLite database — no syncing exports between machines.
 
-Everything lives in one SQLite file on your server, so both your Mac and Windows PC see the same data — no more export/import as a sync mechanism.
+## Features
 
-## Why this design
+### Builder (`/builder`)
 
-- **One shared database, reachable from any device.** Run it once (e.g. on your NAS), reach it from anywhere on your Tailscale network.
-- **Scales as your rune list grows.** Full-text search (SQLite FTS5) plus indexed rune/tag/status filters, server-side pagination — the browser never has to load the whole table.
-- **The AI never sees the whole database.** Each chat turn gets a small, bounded "taxonomy" (the list of distinct runes and tags, not every spell) in its system prompt, plus two tools: `search_spells` (capped, paginated results) and `get_spell_details` (full detail on specific ids only, max 10 at a time). The model is instructed to narrow before going deep — see `lib/ai/system-prompt.ts` and `lib/ai/tools.ts`.
-- **Chat is strictly read-only.** `/api/chat` queries the database through a connection opened in SQLite `readonly` mode (`getReadOnlyDb()` in `lib/db/client.ts`), and there is no write tool defined at all. Even a bug in the tool-calling code can't mutate your data.
+- Add **circle bases**, **primary runes**, **modifiers**, and **control runes**; the app generates every valid spell combination automatically.
+- Search and filter with full-text search (SQLite FTS5), rune filters, tags, and favorites/duds.
+- Edit spell names, summaries, descriptions, and tags inline.
+- Manage tags and modifier-pair display names.
+- Import and export the full database as JSON.
 
-## Batch AI description generation
+The rune panel is split into two columns: circle bases and primaries on the left, modifiers and control runes on the right. Tags sit above the spell table.
 
-Adapted from an earlier standalone Python script the author used to bulk-fill spell names/descriptions/summaries/tags via Claude. The Builder's "Generate descriptions with AI" panel does the same thing, with two changes that matter as the rune list keeps growing:
+### Contemplate Meaning (`/contemplate`)
 
-- **Batched, not one-call-per-spell.** Each API call handles many spells at once (default 20, configurable), using Claude's tool-use to force structured output instead of regex-parsing free text. A rune that generates 130 new spells is ~7 calls, not 130.
-- **Prompt caching.** The system prompt is marked as an Anthropic cache breakpoint, so batches after the first in a run reuse the cached prefix instead of re-billing it in full.
-- **Never overwrites what you've written.** Only fills in whichever of name/description/summary/tags are currently empty for a given spell; skips a spell entirely once all four are filled.
-- **Tags default to your existing list.** The model is instructed to strongly prefer reusing tags already in use, and only introduce a new one when nothing existing fits *and* the concept is general enough to apply to other spells too (not a one-off tag for a single spell).
-- **Rune "meanings."** Each rune row in the Builder has a small "AI context" field (separate from its display name) — e.g. `Fire` → *"Elemental fire damage, versatile, moderate cost."* That's what feeds the model's understanding of what each rune actually does; filling these in noticeably improves generation quality.
-- The panel shows a live count of how many spells in the selected scope need enrichment, a rough cost estimate before you start, and streams results as they come in with a Stop button to cancel a run early (anything already processed is saved).
+Batch AI generation for spells that still need names, summaries, descriptions, or tags.
 
-By default this uses the same model as chat (`ANTHROPIC_MODEL`, `claude-sonnet-5`). Set `ANTHROPIC_BATCH_MODEL` to override just this feature — e.g. `claude-haiku-4-5` for a cheaper/faster model on very large runs — without changing what the chat uses.
+- Processes many spells per Claude API call (configurable batch size) with prompt caching to keep large runs affordable.
+- Never overwrites fields you have already filled in.
+- Streams progress with a stop button; completed spells are saved immediately.
+- Shows a **review table** of spells from your latest batch runs so you can read and edit results before going back to the Builder.
 
-## Local development
+Fill in each rune's **AI context** field in the Builder for noticeably better generation quality.
 
-```bash
-npm install
-cp .env.example .env.local   # fill in ANTHROPIC_API_KEY at minimum
-npm run dev
+### Chat (`/chat`)
+
+Describe a scene or goal in plain language. Claude searches your spell library through read-only tool calls and suggests options that fit.
+
+- The model never receives your entire spell list — only a compact taxonomy plus paginated search results.
+- Chat uses a SQLite connection opened in **readonly** mode; there is no write tool, so the assistant cannot mutate your database.
+
+## Architecture notes
+
+| Concern | Approach |
+|---------|----------|
+| Data | Single SQLite file (`spell-atlas.db`) |
+| Search | FTS5 + indexed filters, server-side pagination |
+| Chat safety | Read-only DB connection, bounded tool results |
+| Batch generation | Claude tool-use, batched calls, optional separate model |
+| Auth | Optional shared passphrase (`APP_PASSWORD`) |
+
+## Deploy with Portainer (recommended)
+
+This stack is designed to deploy from Git through Portainer.
+
+| Setting | Value |
+|---------|--------|
+| Repository URL | `https://github.com/OverXelis/SpellRepo` |
+| Compose path | `spell-atlas/docker-compose.yml` |
+| Branch | `main` |
+
+### Environment variables
+
+Set these in the Portainer stack editor (or a `.env` file referenced by compose):
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | For Chat and Contemplate | Your Claude API key |
+| `APP_PASSWORD` | Recommended | Shared login passphrase |
+| `ANTHROPIC_MODEL` | No | Default `claude-sonnet-5` |
+| `ANTHROPIC_BATCH_MODEL` | No | Override model for batch generation only |
+| `DATABASE_PATH` | No | Set automatically to `/data/spell-atlas.db` in Docker |
+
+See [`.env.example`](.env.example) for a template.
+
+### Persistent data (database)
+
+The compose file bind-mounts a folder on your NAS pool:
+
+```yaml
+/volume2/dockerapps/appdata/spell-atlas:/data
 ```
 
-Visit http://localhost:3000. The SQLite file is created at `./data/spell-atlas.db` on first run (schema is applied automatically).
+Inside the container this is `/data`. The database file is:
 
-## Migrating your existing data
+```
+/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db
+```
 
-If you have an export from the original `spell-circle-db` app (its "Export" button produces a JSON file), you can load it in either of two ways:
-
-1. **In the Builder UI**: click "Import" and pick the file. This works for both the legacy export format and this app's own export format.
-2. **From the command line**, before first deploying:
-   ```bash
-   npm run migrate:legacy -- /path/to/spell-circle-db-export.json
-   ```
-
-Both paths go through the same `importAll()` function and fully replace existing data (spells, runes, tags, naming config).
-
-## Deploying on your UGREEN NAS (Portainer + Tailscale)
-
-This repo is set up for **Portainer stacks deployed from Git** (`https://github.com/OverXelis/SpellRepo`). Portainer should use compose path **`spell-atlas/docker-compose.yml`** (not the repo root).
-
-### One-time: data folder and permissions
-
-Create the folder on **volume2** and give your NAS user read/write access. Docker Compose cannot set Linux folder ownership — this is a one-time step on the host (SSH as admin):
+**One-time setup** on the NAS (SSH as admin — Compose cannot set Linux ownership):
 
 ```bash
 sudo mkdir -p /volume2/dockerapps/appdata/spell-atlas
@@ -63,107 +90,125 @@ sudo chown -R OverXelous:OverXelous /volume2/dockerapps/appdata/spell-atlas
 sudo chmod -R u+rwX /volume2/dockerapps/appdata/spell-atlas
 ```
 
-If you already copied your database here with `docker cp`, run only the `chown` / `chmod` lines.
+Adjust the volume path if your pool is not `volume2`, and change `OverXelous` if your NAS username differs.
 
-The bind mount in `docker-compose.yml` is:
+This folder is **database only**. Do not put logo or banner images here.
 
-```yaml
-- /volume2/dockerapps/appdata/spell-atlas:/data
-```
+### Custom logo and banner
 
-Your SQLite file lives at **`/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db`** on the NAS. This folder is **database only** — do not put logo or banner images here.
+Replace these files in **git**, then **Pull and redeploy** in Portainer (rebuild required):
 
-**Logo and banner images** belong in the git repo at `spell-atlas/public/logo.png` and `spell-atlas/public/name-banner.png`, then redeploy the Portainer stack so the image rebuild picks them up.
+| File | Used for |
+|------|----------|
+| `public/logo.png` | Favicon, nav icon, login screen |
+| `public/name-banner.png` | Builder page header banner |
 
-### Portainer: first deploy
+### First deploy
 
-1. Tailscale running on the NAS (already set up).
-2. In Portainer: **Stacks → Add stack → Git repository**
-   - Repository URL: `https://github.com/OverXelis/SpellRepo`
-   - Compose path: `spell-atlas/docker-compose.yml`
-   - Add environment variables (`ANTHROPIC_API_KEY`, `APP_PASSWORD`, etc.) in the stack editor or via `.env` if you use one.
-3. Deploy the stack.
-4. Open `http://<nas-tailscale-name>:3000` from a device on your tailnet.
+1. Create the data folder and set permissions (above).
+2. In Portainer: **Stacks → Add stack → Git repository** with the settings above.
+3. Add environment variables.
+4. Deploy.
+5. Open `http://<your-nas-tailscale-name>:3000` from a device on your tailnet.
 
-### Portainer: update after a git change
+### Updating after a git change
 
-When `spell-atlas/docker-compose.yml` changes on `main`:
+1. Open your spell-atlas stack in Portainer.
+2. **Pull and redeploy**.
 
-1. In Portainer, open your **spell-atlas** stack.
-2. Use **Pull and redeploy** (or **Update the stack** → pull latest from Git).
-3. Confirm the stack recreates with the new compose file.
+You do not need `git` on the NAS — Portainer pulls from GitHub.
 
-You do **not** need `git` installed on the NAS for this — Portainer pulls from GitHub for you.
+### Migrating from an old Docker named volume
 
-### Migrating from the old Docker named volume
-
-If the app previously used Portainer with the old compose file (Docker-managed volume `spell-atlas-data`), copy the database **before** redeploying with the new bind mount:
+If you previously used the internal Docker volume (`spell-atlas-data`), copy the database **before** switching to the bind mount:
 
 ```bash
-# Copy from the running container (works while the app is still up)
-docker cp spell-atlas:/data/. /volume2/dockerapps/appdata/spell-atlas/
+docker volume ls | grep spell
 
-# Fix ownership so File Explorer and OverXelous can access the files
+docker run --rm \
+  -v YOUR_OLD_VOLUME_NAME:/from:ro \
+  -v /volume2/dockerapps/appdata/spell-atlas:/to \
+  alpine sh -c "cp -av /from/. /to/"
+
 sudo chown -R OverXelous:OverXelous /volume2/dockerapps/appdata/spell-atlas
 sudo chmod -R u+rwX /volume2/dockerapps/appdata/spell-atlas
 ```
 
-Then in Portainer: **Pull and redeploy** the stack so it picks up the updated `docker-compose.yml` with the `/volume2/...` bind mount.
-
-Verify after redeploy:
+Or use the helper script (from a machine that has the repo cloned):
 
 ```bash
-ls -la /volume2/dockerapps/appdata/spell-atlas/
+sudo ./scripts/migrate-docker-volume.sh
+```
+
+Then **Pull and redeploy** in Portainer. Verify:
+
+```bash
 docker inspect spell-atlas --format '{{range .Mounts}}{{.Type}} | {{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'
 ```
 
-You want mount type **`bind`** and source **`/volume2/dockerapps/appdata/spell-atlas`**.
+You want mount type `bind` and source `/volume2/dockerapps/appdata/spell-atlas`.
 
-After confirming your spells load in the browser, you can remove the old unused volume:
+### Backups
+
+- Snapshot `/volume2/dockerapps/appdata/spell-atlas` with your NAS backup jobs (includes `spell-atlas.db` and SQLite `-wal`/`-shm` sidecars while running).
+- Or use **Export JSON** in the Builder UI / `GET /api/export` for a portable backup anytime.
+
+### Optional: HTTPS via Tailscale
+
+On the NAS:
 
 ```bash
-docker volume ls | grep spell
-docker volume rm spell-atlas_spell-atlas-data   # use the name you see
+tailscale serve https / http://localhost:3000
 ```
 
-### Optional: SSH + docker compose (without Portainer)
+## Local development
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Open http://localhost:3000. SQLite is created at `./data/spell-atlas.db` on first run.
+
+## Migrating from spell-circle-db
+
+Import a legacy JSON export through the Builder **Import** button, or:
+
+```bash
+npm run migrate:legacy -- /path/to/spell-circle-db-export.json
+```
+
+Both paths replace existing data (spells, runes, tags, naming config).
+
+## Deploy without Portainer
 
 ```bash
 git clone https://github.com/OverXelis/SpellRepo.git
 cd SpellRepo/spell-atlas
-cp .env.example .env   # set ANTHROPIC_API_KEY and APP_PASSWORD
+cp .env.example .env
 docker compose up -d --build
 ```
 
-### Optional: HTTPS via Tailscale
-
-Run `tailscale serve https / http://localhost:3000` on the NAS if you want a clean HTTPS URL instead of `http://host:3000`.
-
-### Backups
-
-The whole database is the single file at `DATABASE_PATH` (plus SQLite's `-wal`/`-shm` sidecar files while the app is running). Snapshotting `/volume2/dockerapps/appdata/spell-atlas` with your NAS's normal backup tool is sufficient. You can also hit `GET /api/export` at any time (or the "Export JSON" button in the Builder UI) for a portable JSON backup.
+Ensure the bind-mount path in `docker-compose.yml` exists on the host before starting.
 
 ## Project layout
 
 ```
-lib/core/            Pure domain logic ported from the original app
-                      (rune-calculator.ts, spell-name-generator.ts, types.ts)
-lib/db/               SQLite access layer (schema.sql + typed query modules)
-lib/ai/               Claude tool definitions/executors/system prompt for chat,
-                      plus the batched description generator and its cost estimator
-app/api/              REST-ish API routes used by both the Builder UI and,
-                      for /api/chat, the Anthropic tool-use loop
-app/builder/          Builder UI (rune input, spell table, tags)
-app/chat/             Chat UI
-scripts/              One-off scripts (legacy data migration)
+app/
+  builder/           Spell database UI
+  contemplate/       Batch AI generation and review
+  chat/              Scene-based spell research chat
+  api/               REST routes and Claude integration
+components/          Shared UI
+lib/
+  core/              Rune combinatorics and spell naming (ported from spell-circle-db)
+  db/                SQLite schema and queries
+  ai/                Chat tools, batch generator, system prompts
+public/              logo.png, name-banner.png (static assets baked into Docker image)
+scripts/             NAS migration and legacy import helpers
 ```
 
-## Environment variables
+## Related project
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `ANTHROPIC_API_KEY` | for Chat & batch generation | Your Claude API key |
-| `ANTHROPIC_MODEL` | no | Defaults to `claude-sonnet-5`. Used by chat, and by batch generation unless `ANTHROPIC_BATCH_MODEL` is set |
-| `ANTHROPIC_BATCH_MODEL` | no | Overrides the model used only by the batch description generator (e.g. `claude-haiku-4-5` for cheaper large runs) |
-| `APP_PASSWORD` | recommended | Shared passphrase gate for the whole app |
-| `DATABASE_PATH` | no | Defaults to `./data/spell-atlas.db` (set to `/data/spell-atlas.db` in Docker) |
+[`spell-circle-tool/`](../spell-circle-tool/) in this repository is the earlier standalone spell-circle-db app. Spell Atlas is its successor: same rune logic, shared database on the server, modern UI, and integrated Claude chat plus batch generation.
