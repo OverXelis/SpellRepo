@@ -268,27 +268,31 @@ export function updateSpell(db: Database.Database, id: string, patch: SpellPatch
   const existing = db.prepare('SELECT * FROM spells WHERE id = ?').get(id) as SpellRow | undefined;
   if (!existing) return null;
 
+  // Marking a spell as dud clears its tags so duds don't clutter tag filters.
+  const effectivePatch: SpellPatch =
+    patch.status === 'dud' ? { ...patch, tags: patch.tags ?? [] } : patch;
+
   const tx = db.transaction(() => {
     const now = Date.now();
-    if (patch.status !== undefined) {
-      db.prepare('UPDATE spells SET status = ?, updated_at = ? WHERE id = ?').run(patch.status, now, id);
+    if (effectivePatch.status !== undefined) {
+      db.prepare('UPDATE spells SET status = ?, updated_at = ? WHERE id = ?').run(effectivePatch.status, now, id);
     }
-    if (patch.description !== undefined) {
-      db.prepare('UPDATE spells SET description = ?, updated_at = ? WHERE id = ?').run(patch.description, now, id);
+    if (effectivePatch.description !== undefined) {
+      db.prepare('UPDATE spells SET description = ?, updated_at = ? WHERE id = ?').run(effectivePatch.description, now, id);
     }
-    if (patch.customName !== undefined) {
-      db.prepare('UPDATE spells SET custom_name = ?, updated_at = ? WHERE id = ?').run(patch.customName, now, id);
+    if (effectivePatch.customName !== undefined) {
+      db.prepare('UPDATE spells SET custom_name = ?, updated_at = ? WHERE id = ?').run(effectivePatch.customName, now, id);
     }
-    if (patch.summary !== undefined) {
-      const trimmed = patch.summary.slice(0, 100);
+    if (effectivePatch.summary !== undefined) {
+      const trimmed = effectivePatch.summary.slice(0, 100);
       db.prepare('UPDATE spells SET summary = ?, updated_at = ? WHERE id = ?').run(trimmed, now, id);
     }
-    if (patch.tags !== undefined) {
+    if (effectivePatch.tags !== undefined) {
       db.prepare('DELETE FROM spell_tags WHERE spell_id = ?').run(id);
       const findOrCreateTag = db.prepare('INSERT OR IGNORE INTO tags (name) VALUES (?)');
       const getTagId = db.prepare('SELECT id FROM tags WHERE name = ?');
       const linkTag = db.prepare('INSERT OR IGNORE INTO spell_tags (spell_id, tag_id) VALUES (?, ?)');
-      for (const tagName of patch.tags) {
+      for (const tagName of effectivePatch.tags) {
         findOrCreateTag.run(tagName);
         const tagRow = getTagId.get(tagName) as { id: number };
         linkTag.run(id, tagRow.id);

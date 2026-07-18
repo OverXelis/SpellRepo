@@ -19,7 +19,8 @@ interface LogEntry {
 }
 
 const DEFAULT_MAX_SPELLS = 25;
-const DEFAULT_BATCH_SIZE = 20;
+// Smaller batches keep Exempt / Channeling / Draining rules more reliable.
+const DEFAULT_BATCH_SIZE = 10;
 
 function createReviewBatch(): GeneratedReviewBatch {
   return {
@@ -184,6 +185,7 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
           appendLog(`OK ${event.name}${tagsStr} (${fieldsStr})${newTagNote}`, 'success');
 
           if (typeof event.spellId === 'string') {
+            const spellStatus = event.spellStatus;
             addReviewEntry({
               id: event.spellId,
               batchId: currentBatchRef.current?.id ?? 'unknown',
@@ -192,6 +194,10 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
               summary: String(event.summary ?? ''),
               description: String(event.description ?? ''),
               tags,
+              status:
+                spellStatus === 'favorite' || spellStatus === 'dud' || spellStatus === 'niche' || spellStatus === 'normal'
+                  ? spellStatus
+                  : 'normal',
               generatedFields: fields,
               circleBase: String(event.circleBase ?? ''),
               primaryRune: String(event.primaryRune ?? ''),
@@ -228,9 +234,9 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
         <h2 className="ui-panel-header">Contemplate meaning</h2>
         <p className="mt-1 text-sm text-foreground-muted">
           Like a mage meditating on the Dao, run batch generation here to fill in names, summaries, descriptions, and
-          tags for spells that still need them. The model may mark incompatible combinations as duds that fizzle, or
-          extremely narrow-but-working ones as niche, rather than forcing every pairing into a generally useful spell.
-          Review the results in the table below before returning to the Builder.
+          tags for spells that still need them. Smaller batches (default 10) help the model keep firm rules like Exempt
+          and Channeling/Draining straight. Incompatible combinations may be marked dud, and extremely narrow-but-working
+          ones niche. Review the results below before returning to the Builder.
         </p>
       </div>
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { SpellStatus } from '@/lib/core/types';
 import type { GeneratedReviewBatch, GeneratedReviewEntry } from '@/lib/generated-review';
 import { displaySpellName } from '@/lib/generated-review';
 import { SpellDetailRow } from '@/components/spell-detail-row';
-import { ChevronDownIcon, ChevronRightIcon } from '@/components/ui/icons';
+import { ChevronDownIcon, ChevronRightIcon, StarIcon } from '@/components/ui/icons';
 
 interface Props {
   batches: GeneratedReviewBatch[];
@@ -16,7 +17,17 @@ interface Props {
 
 export function GeneratedReviewTable({ batches, availableTags, onClearAll, onClearBatch, onEntryUpdated }: Props) {
   const totalEntries = useMemo(() => batches.reduce((sum, batch) => sum + batch.entries.length, 0), [batches]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Allow multiple rows open at once during review.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   if (totalEntries === 0) {
     return (
@@ -36,7 +47,8 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
           <h2 className="ui-panel-header">Recent contemplation</h2>
           <p className="mt-1 text-sm text-foreground-muted">
             {totalEntries} spell{totalEntries === 1 ? '' : 's'} from your latest batch run{batches.length === 1 ? '' : 's'}.
-            Entries are saved to the database as they are generated; review and edit here before moving on to the Builder.
+            Spell fields autosave to the database as you edit; this review list is a browser-side checklist (kept across
+            reloads on this device).
           </p>
         </div>
         <button type="button" onClick={onClearAll} className="ui-btn-sm ui-btn-secondary">
@@ -71,6 +83,7 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
                   <tr>
                     <th className="w-8 px-3 py-2.5"></th>
                     <th className="px-3 py-2.5">Spell</th>
+                    <th className="px-3 py-2.5">Status</th>
                     <th className="px-3 py-2.5">Summary</th>
                     <th className="px-3 py-2.5">Runes</th>
                     <th className="px-3 py-2.5">Tags</th>
@@ -82,9 +95,9 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
                     <ReviewRow
                       key={entry.id}
                       entry={entry}
-                      expanded={expandedId === entry.id}
+                      expanded={expandedIds.has(entry.id)}
                       availableTags={availableTags}
-                      onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                      onToggle={() => toggleExpanded(entry.id)}
                       onEntryUpdated={onEntryUpdated}
                     />
                   ))}
@@ -98,9 +111,9 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
               <ReviewCard
                 key={entry.id}
                 entry={entry}
-                expanded={expandedId === entry.id}
+                expanded={expandedIds.has(entry.id)}
                 availableTags={availableTags}
-                onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                onToggle={() => toggleExpanded(entry.id)}
                 onEntryUpdated={onEntryUpdated}
               />
             ))}
@@ -109,6 +122,21 @@ export function GeneratedReviewTable({ batches, availableTags, onClearAll, onCle
       ))}
     </div>
   );
+}
+
+function StatusBadge({ status }: { status?: SpellStatus }) {
+  const value = status ?? 'normal';
+  if (value === 'favorite') {
+    return (
+      <span className="inline-flex items-center gap-1 text-warning">
+        <StarIcon filled className="text-warning" />
+        Favorite
+      </span>
+    );
+  }
+  if (value === 'dud') return <span className="text-red-300">Dud</span>;
+  if (value === 'niche') return <span className="text-foreground-muted">Niche</span>;
+  return <span className="text-foreground-subtle">Normal</span>;
 }
 
 function ReviewRow({
@@ -130,7 +158,12 @@ function ReviewRow({
         <td className="px-3 py-2.5 text-foreground-subtle">
           {expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
         </td>
-        <td className="px-3 py-2.5 font-medium text-foreground">{displaySpellName(entry)}</td>
+        <td className={`px-3 py-2.5 font-medium ${entry.status === 'dud' ? 'text-red-400/80 line-through' : 'text-foreground'}`}>
+          {displaySpellName(entry)}
+        </td>
+        <td className="px-3 py-2.5 text-xs">
+          <StatusBadge status={entry.status} />
+        </td>
         <td className="max-w-xs px-3 py-2.5 text-foreground-muted">{entry.summary || '—'}</td>
         <td className="px-3 py-2.5 text-xs text-foreground-muted">
           {entry.circleBase} / {entry.primaryRune}
@@ -150,7 +183,7 @@ function ReviewRow({
       </tr>
       {expanded && (
         <tr className="border-t border-border-subtle bg-surface-raised/50">
-          <td colSpan={6} className="px-3 py-4">
+          <td colSpan={7} className="px-3 py-4">
             <ReviewExpanded entry={entry} availableTags={availableTags} onSaved={() => onEntryUpdated(entry.id)} />
           </td>
         </tr>
@@ -177,7 +210,12 @@ function ReviewCard({
       <button type="button" onClick={onToggle} className="w-full p-4 text-left">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-medium text-foreground">{displaySpellName(entry)}</p>
+            <p className={`font-medium ${entry.status === 'dud' ? 'text-red-400/80 line-through' : 'text-foreground'}`}>
+              {displaySpellName(entry)}
+            </p>
+            <p className="mt-1 text-xs">
+              <StatusBadge status={entry.status} />
+            </p>
             <p className="mt-1 text-sm text-foreground-muted">{entry.summary || 'No summary yet'}</p>
             <p className="mt-2 text-xs text-foreground-subtle">
               {entry.circleBase} / {entry.primaryRune}

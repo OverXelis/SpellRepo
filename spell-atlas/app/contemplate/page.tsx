@@ -49,6 +49,7 @@ export default function ContemplatePage() {
               summary: spell.summary,
               description: spell.description,
               tags: spell.tags,
+              status: spell.status,
             }
           : entry
       ),
@@ -60,13 +61,23 @@ export default function ContemplatePage() {
 
   return (
     <div className="page-shell space-y-6">
-      <div>
-        <h1 className="page-title">Contemplate Meaning</h1>
-        <p className="page-subtitle">
-          Batch-generate spell names and descriptions, then review what the model produced before diving back into the
-          Builder. Incompatible pairings may be marked as duds, and technically-working but extremely narrow uses as
-          niche, rather than forced into generally useful spells.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Contemplate Meaning</h1>
+          <p className="page-subtitle">
+            Batch-generate spell names and descriptions, then review what the model produced before diving back into the
+            Builder. Incompatible pairings may be marked as duds, and technically-working but extremely narrow uses as
+            niche, rather than forced into generally useful spells.
+          </p>
+        </div>
+        {taxonomy && (
+          <div className="flex flex-wrap gap-2">
+            <span className="ui-badge ui-badge-accent">{taxonomy.totalSpellCount} spells</span>
+            <span className="ui-badge ui-badge-primary">{taxonomy.statusCounts.favorite} favorites</span>
+            <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.niche} niche</span>
+            <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.dud} duds</span>
+          </div>
+        )}
       </div>
 
       {error && (

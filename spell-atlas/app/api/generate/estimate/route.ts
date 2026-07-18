@@ -9,7 +9,7 @@ const MODEL = process.env.ANTHROPIC_BATCH_MODEL || process.env.ANTHROPIC_MODEL |
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const params = request.nextUrl.searchParams;
   const spellCount = Number(params.get('spellCount') ?? '0');
-  const batchSize = Number(params.get('batchSize') ?? '20');
+  const batchSize = Number(params.get('batchSize') ?? '10');
 
   const db = getDb();
   const tagCount = getAllTags(db).length;
