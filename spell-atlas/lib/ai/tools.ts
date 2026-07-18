@@ -50,8 +50,9 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
         },
         status: {
           type: 'string',
-          enum: ['normal', 'favorite', 'dud'],
-          description: "Filter by curation status. Omit to include all. 'dud' spells were marked as not useful/interesting -- usually skip these unless asked.",
+          enum: ['normal', 'favorite', 'niche', 'dud'],
+          description:
+            "Filter by curation status. Omit to include all. 'niche' spells only work in extremely narrow scenarios; 'dud' spells fizzle or fail -- usually skip both unless asked.",
         },
         limit: { type: 'number', description: 'Max rows to return (default 10, hard cap 25).' },
         offset: { type: 'number', description: 'Pagination offset (default 0).' },

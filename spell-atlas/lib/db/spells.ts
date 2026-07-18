@@ -487,7 +487,7 @@ export function searchSpells(db: Database.Database, filters: SearchFilters): Sea
   const hasTextQuery = Boolean(filters.query && filters.query.trim());
   const orderBy = hasTextQuery
     ? 'ORDER BY (s.status = \'favorite\') DESC, s.updated_at DESC'
-    : "ORDER BY (s.status = 'favorite') DESC, (s.status = 'dud') ASC, s.generated_name ASC";
+    : "ORDER BY (s.status = 'favorite') DESC, (s.status = 'dud') ASC, (s.status = 'niche') ASC, s.generated_name ASC";
 
   const rows = db
     .prepare(`SELECT * FROM spells s WHERE ${where} ${orderBy} LIMIT ? OFFSET ?`)
@@ -544,7 +544,7 @@ export function countByStatus(db: Database.Database): Record<SpellStatus, number
     status: SpellStatus;
     c: number;
   }[];
-  const result: Record<SpellStatus, number> = { normal: 0, favorite: 0, dud: 0 };
+  const result: Record<SpellStatus, number> = { normal: 0, favorite: 0, dud: 0, niche: 0 };
   for (const row of rows) result[row.status] = row.c;
   return result;
 }

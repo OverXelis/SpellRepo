@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS spells (
   custom_name TEXT NOT NULL DEFAULT '',
   summary TEXT NOT NULL DEFAULT '',
   description TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'normal' CHECK (status IN ('normal', 'favorite', 'dud')),
+  status TEXT NOT NULL DEFAULT 'normal' CHECK (status IN ('normal', 'favorite', 'dud', 'niche')),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

@@ -32,6 +32,43 @@ function runMigrations(db: Database.Database) {
   if (!runeColumns.some((c) => c.name === 'meaning')) {
     db.exec("ALTER TABLE runes ADD COLUMN meaning TEXT NOT NULL DEFAULT ''");
   }
+
+  // SQLite cannot ALTER a CHECK constraint in place. Rebuild spells when an
+  // older database still forbids the 'niche' status value.
+  const spellsSql = (
+    db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'spells'").get() as
+      | { sql: string }
+      | undefined
+  )?.sql;
+  if (spellsSql && !spellsSql.includes("'niche'")) {
+    db.exec('PRAGMA foreign_keys = OFF');
+    db.exec(`
+      CREATE TABLE spells_new (
+        id TEXT PRIMARY KEY,
+        circle_base TEXT NOT NULL,
+        primary_rune TEXT NOT NULL,
+        control_rune TEXT,
+        generated_name TEXT NOT NULL DEFAULT '',
+        custom_name TEXT NOT NULL DEFAULT '',
+        summary TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'normal' CHECK (status IN ('normal', 'favorite', 'dud', 'niche')),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      INSERT INTO spells_new
+        SELECT id, circle_base, primary_rune, control_rune, generated_name, custom_name,
+               summary, description, status, created_at, updated_at
+        FROM spells;
+      DROP TABLE spells;
+      ALTER TABLE spells_new RENAME TO spells;
+      CREATE INDEX IF NOT EXISTS idx_spells_primary ON spells(primary_rune);
+      CREATE INDEX IF NOT EXISTS idx_spells_circle ON spells(circle_base);
+      CREATE INDEX IF NOT EXISTS idx_spells_control ON spells(control_rune);
+      CREATE INDEX IF NOT EXISTS idx_spells_status ON spells(status);
+    `);
+    db.exec('PRAGMA foreign_keys = ON');
+  }
 }
 
 let writable: Database.Database | null = null;

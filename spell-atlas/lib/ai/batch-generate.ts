@@ -33,7 +33,7 @@ export const BATCH_TOOL: Anthropic.Tool = {
             description: {
               type: 'string',
               description:
-                'One to two sentences. For functional spells: what it does and a practical use. For incompatible combinations (isDud true): what happens when cast -- typically fizzling, failing to cohere, or producing no useful effect.',
+                'One to two sentences. Functional: what it does and a practical use. Niche: the real limited effect and why the use-case is narrow. Dud: what happens when cast (fizzle, collapse, no useful effect).',
             },
             summary: { type: 'string', description: 'A short tagline, max 50 characters, for quick reference in a table.' },
             tags: {
@@ -45,10 +45,15 @@ export const BATCH_TOOL: Anthropic.Tool = {
             isDud: {
               type: 'boolean',
               description:
-                'True when this rune combination lacks compatibility and would fizzle or fail in-world rather than producing a functional spell. Do not force a working spell when the runes do not logically combine.',
+                'True when this rune combination lacks compatibility and would fizzle or fail in-world rather than producing a functional spell. Mutually exclusive with isNiche.',
+            },
+            isNiche: {
+              type: 'boolean',
+              description:
+                'True when the combination is technically functional but only useful in extremely narrow, unlikely, or impractical scenarios. Mutually exclusive with isDud.',
             },
           },
-          required: ['id', 'name', 'description', 'summary', 'tags', 'isDud'],
+          required: ['id', 'name', 'description', 'summary', 'tags', 'isDud', 'isNiche'],
         },
       },
     },
@@ -90,27 +95,44 @@ The magic system works by combining:
 3. Modifier Rune(s) -- zero, one, or two of these -- that alter the effect
 4. A Control Rune (optional) that changes how/when the spell triggers or sustains
 
+FIRM MAGIC-SYSTEM RULES -- never bend these for a prettier description:
+- Instant activation: every spell activates instantly up front. The full mana cost is paid/spent before the effect activates.
+- No ongoing drain by default: do NOT describe continual mana drain, steadily draining the caster's reserves, sustained upkeep, or channeling-style maintenance unless the Control Rune is specifically Channeling. Channeling is the only exception that turns a spell into an ongoing channeled skill.
+- Follow each rune's own meaning text carefully (given below per spell). Prefer that text over assumptions from the rune's name alone.
+- Do not invent mechanics the runes do not support. If a combination is awkward, mark it dud or niche rather than rewriting a rune's meaning.
+
+EXEMPT modifier -- critical, often mishandled:
+- Exempt means carving a designated subject out of the spell's effect, usually by introducing their blood or mana into the casting so the magic recognizes and skips them.
+- Exempt is NOT "opposite", NOT inversion of the primary effect, and NOT a resistance/buff against that effect type.
+- Example of correct use: an Area fire spell with Exempt still burns the area, but designated allies who contributed blood/mana are untouched.
+- Example of incorrect use: turning Exempt + a slowing/speed primary into "grants resistance to slowing" or similar. That flexes Exempt into the opposite of what it means.
+- Targeted + Exempt can be especially awkward: if the spell's only subject is the target and Exempt removes them from the effect, the result may cancel itself or only matter in extremely narrow cases (e.g. releasing one specific person from a prior effect of that type). Do not invent a resistance reinterpretation to "save" such a spell -- mark it niche (or dud if it truly fails to cohere).
+
 IMPORTANT -- think creatively about each combination:
 - The same rune can be offensive OR defensive OR utility depending on the base and modifiers. Don't default to combat.
 - Consider non-combat applications: powering devices, preservation, cleaning, travel, crafting, communication.
 - A "trap" base isn't only for enemies -- it can create a beneficial zone allies walk through.
 - An "alteration" base changes properties -- this could buff allies or debuff enemies.
 - An "area" base could be a protective dome, not just a damage zone.
-- Read each rune's own description carefully (given below per spell) -- it may explicitly describe non-obvious or dual-purpose behavior. Follow that description's intent over any assumption you'd otherwise make from the rune's name alone.
+- Creativity must stay inside the firm rules above. Cleverness that breaks Exempt, mana timing, or Channeling rules is wrong.
 
-DUD / INCOMPATIBLE COMBINATIONS -- important:
-- The combinatorial system generates every valid rune pairing, but NOT every pairing produces a functional spell in-world.
-- In the story, spells that lack rune compatibility fizzle out, dissipate harmlessly, or fail to cohere -- this is normal and expected.
-- When a combination does not logically work together, do NOT stretch or contort the logic to invent a functional use. It is better to honestly describe a failed or inert combination than to force a clever effect that strains credulity.
-- For these spells: set isDud to true. Give a brief honest name and description of what happens when the mage tries it (fizzle, collapse, no effect, unstable flash, etc.). Tags can reflect failure or non-function if an existing tag fits.
-- Reserve creative, functional descriptions for combinations that genuinely cohere. Be willing to mark combinations as duds when the runes clash -- not every spell needs to do something useful.
+SPELL USEFULNESS TIERS -- choose exactly one:
+- Functional (isDud false, isNiche false): the combination coherently does something a mage would reasonably cast in ordinary circumstances.
+- Niche (isNiche true, isDud false): the combination technically works, but only in extremely narrow, unlikely, or impractical scenarios. Describe the real (limited) effect honestly -- do not pad it into a generally useful spell.
+- Dud (isDud true, isNiche false): the runes lack compatibility and the casting fizzles, collapses, or fails to cohere. Do NOT stretch logic to invent a functional use.
+- Never set both isDud and isNiche to true.
+
+NAMING:
+- 2-4 words, evocative and thematic, reflecting the actual effect the runes produce.
+- Do not use cost/economy metaphors in the name (e.g. "Costly", "Draining", "Expensive") unless a rune explicitly justifies that framing -- and never imply ongoing mana drain without Channeling.
+- For duds, the name may reflect failure or instability. For niche spells, the name should still match the real limited effect, not a fantasized stronger one.
 
 You will be given a BATCH of multiple spell combinations at once, each with a unique id. For each one, generate:
-- name: 2-4 words, evocative and thematic. For duds, the name can reflect failure or instability rather than a useful effect.
-- description: one to two sentences. For functional spells: what it does and a practical use. For duds: what happens when cast (typically fizzling or failing to cohere).
+- name: 2-4 words, following the naming rules above.
+- description: one to two sentences. Functional: what it does and a practical use. Niche: what it does and why the use-case is narrow. Dud: what happens when cast (fizzle, collapse, no effect, etc.).
 - summary: a short tagline (max 50 characters) for a quick-reference table.
-- tags: 1-2 tags categorizing its PRIMARY purpose. You will be given the list of tags currently in use -- strongly prefer reusing one of those. Only introduce a new tag if none of the existing ones fit at all, and only if it's a general concept that could reasonably apply to other spells too (never invent a tag specific to just this one spell -- that defeats the point of tagging).
-- isDud: true when the rune combination lacks compatibility and would fizzle or fail in-world; false when it produces a functional spell.
+- tags: 1-2 tags categorizing its PRIMARY purpose (Combat, Utility, Support, etc. -- not usefulness tier). Prefer existing tags; only introduce a new purpose tag if none fit and it could apply to other spells too. Do not invent a tag just to mean niche/dud -- that is what isNiche/isDud are for.
+- isDud / isNiche: set according to the usefulness tiers above.
 
 Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Defense, or Enchanting depending on what the base/rune/modifiers actually do.
 
@@ -171,6 +193,7 @@ interface GeneratedSpellEntry {
   summary: string;
   tags: string[];
   isDud?: boolean;
+  isNiche?: boolean;
 }
 
 /** Applies a model-generated entry to one spell, only filling fields that
@@ -191,14 +214,20 @@ export function applyGeneratedEntry(
 
   if (hasName && hasDescription && hasSummary && hasTags) return null;
 
-  const patch: { customName?: string; description?: string; summary?: string; tags?: string[]; status?: 'normal' | 'dud' } = {};
+  const patch: { customName?: string; description?: string; summary?: string; tags?: string[]; status?: 'normal' | 'dud' | 'niche' } = {};
   const generatedFields: string[] = [];
   let newTagsCreated: string[] = [];
   let finalTags = spell.tags;
 
-  if (generated.isDud && spell.status === 'normal') {
-    patch.status = 'dud';
-    generatedFields.push('status');
+  // Only auto-promote from normal; never overwrite favorite/hand-curated status.
+  if (spell.status === 'normal') {
+    if (generated.isDud) {
+      patch.status = 'dud';
+      generatedFields.push('status');
+    } else if (generated.isNiche) {
+      patch.status = 'niche';
+      generatedFields.push('status');
+    }
   }
 
   if (!hasName && generated.name?.trim()) {

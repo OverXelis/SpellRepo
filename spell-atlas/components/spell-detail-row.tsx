@@ -84,7 +84,7 @@ export function SpellDetailRow({ spellId, availableTags, onSaved }: Props) {
         <div>
           <label className="ui-label mb-1.5">Status</label>
           <div className="flex flex-wrap gap-2">
-            {(['normal', 'favorite', 'dud'] as SpellStatus[]).map((s) => (
+            {(['normal', 'favorite', 'niche', 'dud'] as SpellStatus[]).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -95,12 +95,14 @@ export function SpellDetailRow({ spellId, availableTags, onSaved }: Props) {
                       ? 'bg-warning/20 text-warning'
                       : s === 'dud'
                       ? 'bg-danger-muted text-red-300'
+                      : s === 'niche'
+                      ? 'bg-surface-raised text-foreground-muted'
                       : 'ui-btn-primary'
                     : 'ui-btn-secondary'
                 }`}
               >
                 {s === 'favorite' && <StarIcon filled className="text-warning" />}
-                {s === 'favorite' ? 'Favorite' : s === 'dud' ? 'Dud' : 'Normal'}
+                {s === 'favorite' ? 'Favorite' : s === 'dud' ? 'Dud' : s === 'niche' ? 'Niche' : 'Normal'}
               </button>
             ))}
           </div>
