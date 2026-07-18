@@ -1,11 +1,12 @@
 import type Database from 'better-sqlite3';
-import type { RuneLists, RuneNameConfig } from '@/lib/core/types';
+import type { RuneLists, RuneMeaningConfig, RuneNameConfig } from '@/lib/core/types';
 import { DEFAULT_CIRCLE_BASES, DEFAULT_CONTROL_RUNES, DEFAULT_MODIFIER_RUNES } from '@/lib/core/types';
 
 interface RuneRow {
   kind: string;
   name: string;
   display_name: string;
+  meaning: string;
   sort_order: number;
 }
 
@@ -42,6 +43,24 @@ export function getRuneLists(db: Database.Database): RuneLists {
     else if (row.kind === 'control') lists.controlRunes.push(row.name);
   }
   return lists;
+}
+
+export function getRuneMeanings(db: Database.Database): RuneMeaningConfig {
+  const rows = db.prepare('SELECT kind, name, meaning FROM runes').all() as RuneRow[];
+  const config: RuneMeaningConfig = {
+    circleBaseMeanings: {},
+    primaryMeanings: {},
+    modifierMeanings: {},
+    controlMeanings: {},
+  };
+  for (const row of rows) {
+    if (!row.meaning) continue;
+    if (row.kind === 'circleBase') config.circleBaseMeanings[row.name] = row.meaning;
+    else if (row.kind === 'primary') config.primaryMeanings[row.name] = row.meaning;
+    else if (row.kind === 'modifier') config.modifierMeanings[row.name] = row.meaning;
+    else if (row.kind === 'control') config.controlMeanings[row.name] = row.meaning;
+  }
+  return config;
 }
 
 export function getRuneNameConfig(db: Database.Database): RuneNameConfig {
