@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RuneLists } from '@/lib/core/types';
 import type { GeneratedReviewBatch, GeneratedReviewEntry } from '@/lib/generated-review';
-import { loadReviewBatches, saveReviewBatches } from '@/lib/generated-review';
+import { saveReviewBatches } from '@/lib/generated-review';
 import { estimateGenerationCost, searchSpellsApi, type CostEstimate } from '@/lib/api-client';
 
 interface Props {
   runeLists: RuneLists;
   onDataChanged: () => void;
-  onReviewUpdated?: (batches: GeneratedReviewBatch[]) => void;
+  /** Current review checklist from parent React state (source of truth). */
+  reviewBatches: GeneratedReviewBatch[];
+  onReviewUpdated: (batches: GeneratedReviewBatch[]) => void;
 }
 
 interface LogEntry {
@@ -30,7 +32,7 @@ function createReviewBatch(): GeneratedReviewBatch {
   };
 }
 
-export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }: Props) {
+export function BatchGeneratePanel({ runeLists, onDataChanged, reviewBatches, onReviewUpdated }: Props) {
   const [circleBase, setCircleBase] = useState('');
   const [primaryRune, setPrimaryRune] = useState('');
   const [maxSpells, setMaxSpells] = useState(DEFAULT_MAX_SPELLS);
@@ -46,6 +48,13 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
   const abortRef = useRef<AbortController | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const currentBatchRef = useRef<GeneratedReviewBatch | null>(null);
+  // Keep an in-memory copy so stream updates never depend on localStorage
+  // succeeding (quota / private mode can break setItem).
+  const reviewBatchesRef = useRef<GeneratedReviewBatch[]>(reviewBatches);
+
+  useEffect(() => {
+    reviewBatchesRef.current = reviewBatches;
+  }, [reviewBatches]);
 
   const scopeFilters = {
     circleBase: circleBase || undefined,
@@ -54,10 +63,11 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
 
   const syncReviewBatches = useCallback(
     (updater: (prev: GeneratedReviewBatch[]) => GeneratedReviewBatch[]) => {
-      const prev = loadReviewBatches();
+      const prev = reviewBatchesRef.current;
       const next = updater(prev);
+      reviewBatchesRef.current = next;
       saveReviewBatches(next);
-      onReviewUpdated?.(next);
+      onReviewUpdated(next);
       return next;
     },
     [onReviewUpdated]
