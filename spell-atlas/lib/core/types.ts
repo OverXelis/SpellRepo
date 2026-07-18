@@ -2,7 +2,7 @@
 // original spell-circle-db app: a spell = circleBase x primaryRune x
 // modifierRunes[0-2] x controlRune[0-1].
 
-export type SpellStatus = 'normal' | 'favorite' | 'dud';
+export type SpellStatus = 'normal' | 'favorite' | 'dud' | 'niche';
 export type RuneKind = 'circleBase' | 'primary' | 'modifier' | 'control';
 
 export interface SpellRecord {

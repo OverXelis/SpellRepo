@@ -17,6 +17,15 @@ export interface ExportPayload {
   exportedAt: string;
 }
 
+const VALID_STATUSES = new Set<SpellStatus>(['normal', 'favorite', 'dud', 'niche']);
+
+function normalizeStatus(status: unknown): SpellStatus {
+  if (typeof status === 'string' && VALID_STATUSES.has(status as SpellStatus)) {
+    return status as SpellStatus;
+  }
+  return 'normal';
+}
+
 export function exportAll(db: Database.Database): ExportPayload {
   const spells = getSpellsByIds(db, getAllSpellIds(db));
   const allTags = getAllTags(db);
@@ -125,7 +134,7 @@ export function importAll(db: Database.Database, jsonString: string): { success:
       createdAt: s.createdAt ?? now,
       updatedAt: now,
       tags: s.tags ?? [],
-      status: (s.status ?? 'normal') as SpellStatus,
+      status: normalizeStatus(s.status),
       description: s.description ?? '',
       customName: s.customName ?? '',
       summary: (s.summary ?? '').slice(0, 100),

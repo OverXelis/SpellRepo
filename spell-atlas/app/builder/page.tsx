@@ -37,6 +37,7 @@ export default function BuilderPage() {
           <div className="flex flex-wrap gap-2">
             <span className="ui-badge ui-badge-accent">{taxonomy.totalSpellCount} spells</span>
             <span className="ui-badge ui-badge-primary">{taxonomy.statusCounts.favorite} favorites</span>
+            <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.niche} niche</span>
             <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.dud} duds</span>
           </div>
         )}

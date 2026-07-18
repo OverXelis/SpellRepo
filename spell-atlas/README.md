@@ -9,7 +9,7 @@ Run it once on your NAS or homelab, open it from any device on your Tailscale ne
 ### Builder (`/builder`)
 
 - Add **circle bases**, **primary runes**, **modifiers**, and **control runes**; the app generates every valid spell combination automatically.
-- Search and filter with full-text search (SQLite FTS5), rune filters, tags, and favorites/duds.
+- Search and filter with full-text search (SQLite FTS5), rune filters, tags, and favorites/niche/duds.
 - Edit spell names, summaries, descriptions, and tags inline.
 - Manage tags and modifier-pair display names.
 - Import and export the full database as JSON.

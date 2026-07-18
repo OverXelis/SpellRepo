@@ -129,6 +129,7 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
         <option value="">All status</option>
         <option value="favorite">Favorites</option>
         <option value="normal">Normal</option>
+        <option value="niche">Niche</option>
         <option value="dud">Duds</option>
       </select>
       <select
@@ -468,12 +469,15 @@ function SpellName({ spell }: { spell: SearchResult['results'][number] }) {
       ? 'text-warning'
       : spell.status === 'dud'
       ? 'text-red-400/80 line-through'
+      : spell.status === 'niche'
+      ? 'text-foreground-muted'
       : 'text-foreground';
 
   return (
     <div className={`flex items-center gap-1.5 font-medium ${statusClass}`}>
       {spell.status === 'favorite' && <StarIcon filled className="text-warning" />}
       {spell.name}
+      {spell.status === 'niche' && <span className="ui-badge ui-badge-muted text-[10px]">niche</span>}
     </div>
   );
 }

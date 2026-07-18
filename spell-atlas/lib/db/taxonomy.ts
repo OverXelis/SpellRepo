@@ -11,7 +11,7 @@ export interface Taxonomy {
   tags: TagInfo[];
   tagCategories: string[];
   totalSpellCount: number;
-  statusCounts: { normal: number; favorite: number; dud: number };
+  statusCounts: { normal: number; favorite: number; dud: number; niche: number };
 }
 
 /**
