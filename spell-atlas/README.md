@@ -49,61 +49,93 @@ If you have an export from the original `spell-circle-db` app (its "Export" butt
 
 Both paths go through the same `importAll()` function and fully replace existing data (spells, runes, tags, naming config).
 
-## Deploying on your UGREEN NAS via Tailscale
+## Deploying on your UGREEN NAS (Portainer + Tailscale)
 
-1. Make sure Tailscale is running on the NAS (you already have this set up).
-2. **Create the data folder on the NAS** (recommended before first start):
-   ```bash
-   sudo mkdir -p /volume2/dockerapps/appdata/spell-atlas
-   sudo chown -R OverXelous:OverXelous /volume2/dockerapps/appdata/spell-atlas
-   sudo chmod -R u+rwX /volume2/dockerapps/appdata/spell-atlas
-   ```
-   Or run the helper script from the repo (same result):
-   ```bash
-   sudo ./scripts/setup-data-dir.sh
-   ```
-   Docker can sometimes create a missing bind-mount path on its own, but on UGREEN/UGOS it is safer to create the folder yourself and set ownership so you can browse, back up, and edit files as `OverXelous` without extra permission steps later.
-3. Build and run with Docker Compose. On the NAS, using UGOS's Container Manager (or SSH + `docker compose`):
-   ```bash
-   git clone <this repo> spell-atlas
-   cd spell-atlas
-   cp .env.example .env
-   # edit .env: set ANTHROPIC_API_KEY and APP_PASSWORD
-   docker compose up -d --build
-   ```
-   The SQLite database is created automatically at `/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db` on first run.
-4. From your Mac or Windows PC (on the same tailnet), open `http://<nas-tailscale-name>:3000`. Since it's only reachable over Tailscale, the `APP_PASSWORD` gate is a light extra layer, not your main line of defense — but set it anyway.
-5. (Optional) Run `tailscale serve https / http://localhost:3000` on the NAS if you want a clean HTTPS URL instead of `http://host:3000`.
+This repo is set up for **Portainer stacks deployed from Git** (`https://github.com/OverXelis/SpellRepo`). Portainer should use compose path **`spell-atlas/docker-compose.yml`** (not the repo root).
+
+### One-time: data folder and permissions
+
+Create the folder on **volume2** and give your NAS user read/write access. Docker Compose cannot set Linux folder ownership — this is a one-time step on the host (SSH as admin):
+
+```bash
+sudo mkdir -p /volume2/dockerapps/appdata/spell-atlas
+sudo chown -R OverXelous:OverXelous /volume2/dockerapps/appdata/spell-atlas
+sudo chmod -R u+rwX /volume2/dockerapps/appdata/spell-atlas
+```
+
+If you already copied your database here with `docker cp`, run only the `chown` / `chmod` lines.
+
+The bind mount in `docker-compose.yml` is:
+
+```yaml
+- /volume2/dockerapps/appdata/spell-atlas:/data
+```
+
+Your SQLite file lives at **`/volume2/dockerapps/appdata/spell-atlas/spell-atlas.db`** on the NAS.
+
+### Portainer: first deploy
+
+1. Tailscale running on the NAS (already set up).
+2. In Portainer: **Stacks → Add stack → Git repository**
+   - Repository URL: `https://github.com/OverXelis/SpellRepo`
+   - Compose path: `spell-atlas/docker-compose.yml`
+   - Add environment variables (`ANTHROPIC_API_KEY`, `APP_PASSWORD`, etc.) in the stack editor or via `.env` if you use one.
+3. Deploy the stack.
+4. Open `http://<nas-tailscale-name>:3000` from a device on your tailnet.
+
+### Portainer: update after a git change
+
+When `spell-atlas/docker-compose.yml` changes on `main`:
+
+1. In Portainer, open your **spell-atlas** stack.
+2. Use **Pull and redeploy** (or **Update the stack** → pull latest from Git).
+3. Confirm the stack recreates with the new compose file.
+
+You do **not** need `git` installed on the NAS for this — Portainer pulls from GitHub for you.
 
 ### Migrating from the old Docker named volume
 
-If you already ran Spell Atlas with the previous `docker-compose.yml` (which used a Docker-managed volume named `spell-atlas-data`), your existing database is still in that volume — not in `appdata/spell-atlas` yet. Move it once:
+If the app previously used Portainer with the old compose file (Docker-managed volume `spell-atlas-data`), copy the database **before** redeploying with the new bind mount:
 
 ```bash
-cd spell-atlas
-git pull   # get the updated docker-compose.yml
-docker compose down
-
-# Option A — migration script (recommended)
-chmod +x scripts/migrate-docker-volume.sh
-sudo ./scripts/migrate-docker-volume.sh
-
-# Option B — manual copy while the old container still exists
-sudo mkdir -p /volume2/dockerapps/appdata/spell-atlas
+# Copy from the running container (works while the app is still up)
 docker cp spell-atlas:/data/. /volume2/dockerapps/appdata/spell-atlas/
+
+# Fix ownership so File Explorer and OverXelous can access the files
 sudo chown -R OverXelous:OverXelous /volume2/dockerapps/appdata/spell-atlas
 sudo chmod -R u+rwX /volume2/dockerapps/appdata/spell-atlas
+```
 
+Then in Portainer: **Pull and redeploy** the stack so it picks up the updated `docker-compose.yml` with the `/volume2/...` bind mount.
+
+Verify after redeploy:
+
+```bash
+ls -la /volume2/dockerapps/appdata/spell-atlas/
+docker inspect spell-atlas --format '{{range .Mounts}}{{.Type}} | {{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'
+```
+
+You want mount type **`bind`** and source **`/volume2/dockerapps/appdata/spell-atlas`**.
+
+After confirming your spells load in the browser, you can remove the old unused volume:
+
+```bash
+docker volume ls | grep spell
+docker volume rm spell-atlas_spell-atlas-data   # use the name you see
+```
+
+### Optional: SSH + docker compose (without Portainer)
+
+```bash
+git clone https://github.com/OverXelis/SpellRepo.git
+cd SpellRepo/spell-atlas
+cp .env.example .env   # set ANTHROPIC_API_KEY and APP_PASSWORD
 docker compose up -d --build
 ```
 
-The script looks for a volume named `spell-atlas_spell-atlas-data` or `spell-atlas-data` (Compose prefixes the project directory name). If yours is different, run `docker volume ls | grep spell` and set `SPELL_ATLAS_OLD_VOLUME=your_volume_name ./scripts/migrate-docker-volume.sh`.
+### Optional: HTTPS via Tailscale
 
-After you confirm the app loads your spells correctly, you can remove the old unused volume:
-
-```bash
-docker volume rm spell-atlas_spell-atlas-data   # name from `docker volume ls`
-```
+Run `tailscale serve https / http://localhost:3000` on the NAS if you want a clean HTTPS URL instead of `http://host:3000`.
 
 ### Backups
 
