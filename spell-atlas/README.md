@@ -52,7 +52,12 @@ Both paths go through the same `importAll()` function and fully replace existing
 ## Deploying on your UGREEN NAS via Tailscale
 
 1. Make sure Tailscale is running on the NAS (you already have this set up).
-2. Build and run with Docker Compose. On the NAS, using UGOS's Container Manager (or SSH + `docker compose`):
+2. **Create the data folder on the NAS** (recommended before first start):
+   ```bash
+   mkdir -p /volume1/dockerapps/appdata/spell-atlas
+   ```
+   Docker can sometimes create a missing bind-mount path on its own, but on UGREEN/UGOS it is safer to create the folder yourself (File Manager or SSH) so permissions and snapshot/backup rules are correct. If your storage pool is not `volume1`, change the path in `docker-compose.yml` to match your shared-folder layout.
+3. Build and run with Docker Compose. On the NAS, using UGOS's Container Manager (or SSH + `docker compose`):
    ```bash
    git clone <this repo> spell-atlas
    cd spell-atlas
@@ -60,13 +65,41 @@ Both paths go through the same `importAll()` function and fully replace existing
    # edit .env: set ANTHROPIC_API_KEY and APP_PASSWORD
    docker compose up -d --build
    ```
-3. Point the `spell-atlas-data` volume at a real path on your storage pool if you want it covered by the NAS's own snapshot/backup jobs (edit `docker-compose.yml`'s `volumes:` section, e.g. `/volume1/docker/spell-atlas/data:/data`).
+   The SQLite database is created automatically at `/volume1/dockerapps/appdata/spell-atlas/spell-atlas.db` on first run.
 4. From your Mac or Windows PC (on the same tailnet), open `http://<nas-tailscale-name>:3000`. Since it's only reachable over Tailscale, the `APP_PASSWORD` gate is a light extra layer, not your main line of defense — but set it anyway.
 5. (Optional) Run `tailscale serve https / http://localhost:3000` on the NAS if you want a clean HTTPS URL instead of `http://host:3000`.
 
+### Migrating from the old Docker named volume
+
+If you already ran Spell Atlas with the previous `docker-compose.yml` (which used a Docker-managed volume named `spell-atlas-data`), your existing database is still in that volume — not in `appdata/spell-atlas` yet. Move it once:
+
+```bash
+cd spell-atlas
+git pull   # get the updated docker-compose.yml
+docker compose down
+
+# Option A — migration script (recommended)
+chmod +x scripts/migrate-docker-volume.sh
+./scripts/migrate-docker-volume.sh
+
+# Option B — manual copy while the old container still exists
+mkdir -p /volume1/dockerapps/appdata/spell-atlas
+docker cp spell-atlas:/data/. /volume1/dockerapps/appdata/spell-atlas/
+
+docker compose up -d --build
+```
+
+The script looks for a volume named `spell-atlas_spell-atlas-data` or `spell-atlas-data` (Compose prefixes the project directory name). If yours is different, run `docker volume ls | grep spell` and set `SPELL_ATLAS_OLD_VOLUME=your_volume_name ./scripts/migrate-docker-volume.sh`.
+
+After you confirm the app loads your spells correctly, you can remove the old unused volume:
+
+```bash
+docker volume rm spell-atlas_spell-atlas-data   # name from `docker volume ls`
+```
+
 ### Backups
 
-The whole database is the single file at `DATABASE_PATH` (plus SQLite's `-wal`/`-shm` sidecar files while the app is running). Snapshotting that path with your NAS's normal backup tool is sufficient. You can also hit `GET /api/export` at any time (or the "Export JSON" button in the Builder UI) for a portable JSON backup.
+The whole database is the single file at `DATABASE_PATH` (plus SQLite's `-wal`/`-shm` sidecar files while the app is running). Snapshotting `/volume1/dockerapps/appdata/spell-atlas` with your NAS's normal backup tool is sufficient. You can also hit `GET /api/export` at any time (or the "Export JSON" button in the Builder UI) for a portable JSON backup.
 
 ## Project layout
 
