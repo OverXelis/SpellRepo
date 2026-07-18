@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
-import { countAffectedSpells, removeRune, renameRune, updateDisplayName } from '@/lib/db/runes';
+import { countAffectedSpells, removeRune, renameRune, updateDisplayName, updateRuneMeaning } from '@/lib/db/runes';
 import type { RuneKind } from '@/lib/core/types';
 import { withErrorHandling } from '@/lib/api-utils';
 
@@ -33,6 +33,9 @@ export const PATCH = withErrorHandling(async (request: NextRequest, { params }: 
   }
   if (typeof body.displayName === 'string') {
     updateDisplayName(db, kind, typeof body.newName === 'string' ? body.newName.trim() : decodedName, body.displayName);
+  }
+  if (typeof body.meaning === 'string') {
+    updateRuneMeaning(db, kind, typeof body.newName === 'string' ? body.newName.trim() : decodedName, body.meaning);
   }
 
   return NextResponse.json({ success: true });

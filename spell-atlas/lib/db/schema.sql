@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS runes (
   kind TEXT NOT NULL CHECK (kind IN ('circleBase', 'primary', 'modifier', 'control')),
   name TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
+  -- Free-text "what this conceptually does" note (e.g. "Elemental fire
+  -- damage, versatile, moderate cost"). Not used for spell naming -- only
+  -- as context fed to the AI batch description generator.
+  meaning TEXT NOT NULL DEFAULT '',
   sort_order INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (kind, name)
 );

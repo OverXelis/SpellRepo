@@ -29,6 +29,8 @@ function parseFilters(params: URLSearchParams): SearchFilters {
   const status = params.get('status');
   if (status) filters.status = status as SpellStatus;
 
+  if (params.get('needsEnrichment') === 'true') filters.needsEnrichment = true;
+
   const limit = params.get('limit');
   if (limit) filters.limit = Number(limit);
   const offset = params.get('offset');

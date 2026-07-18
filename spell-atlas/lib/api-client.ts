@@ -30,6 +30,7 @@ export function searchSpellsApi(filters: SearchFilters): Promise<SearchResult> {
   if (filters.modifierRunes?.length) params.set('modifierRunes', filters.modifierRunes.join(','));
   if (filters.controlRune) params.set('controlRune', filters.controlRune);
   if (filters.status) params.set('status', filters.status);
+  if (filters.needsEnrichment) params.set('needsEnrichment', 'true');
   if (filters.limit) params.set('limit', String(filters.limit));
   if (filters.offset) params.set('offset', String(filters.offset));
   return jsonFetch(`/api/spells?${params.toString()}`);
@@ -70,6 +71,10 @@ export function setRuneDisplayNameApi(kind: RuneKind, name: string, displayName:
   return jsonFetch(`/api/runes/${kind}/${encodeURIComponent(name)}`, { method: 'PATCH', body: JSON.stringify({ displayName }) });
 }
 
+export function setRuneMeaningApi(kind: RuneKind, name: string, meaning: string): Promise<{ success: boolean }> {
+  return jsonFetch(`/api/runes/${kind}/${encodeURIComponent(name)}`, { method: 'PATCH', body: JSON.stringify({ meaning }) });
+}
+
 export function setModifierPairNameApi(mod1: string, mod2: string, displayName: string): Promise<{ success: boolean }> {
   return jsonFetch('/api/runes/pair-name', { method: 'POST', body: JSON.stringify({ mod1, mod2, displayName }) });
 }
@@ -96,6 +101,19 @@ export function setTagCategoryApi(name: string, category: string | null): Promis
 
 export function removeTagApi(name: string): Promise<{ success: boolean }> {
   return jsonFetch(`/api/tags/${encodeURIComponent(name)}`, { method: 'DELETE' });
+}
+
+export interface CostEstimate {
+  model: string;
+  spellCount: number;
+  batchCount: number;
+  estInputTokens: number;
+  estOutputTokens: number;
+  estCostUsd: number;
+}
+
+export function estimateGenerationCost(spellCount: number, batchSize: number): Promise<CostEstimate> {
+  return jsonFetch(`/api/generate/estimate?spellCount=${spellCount}&batchSize=${batchSize}`);
 }
 
 export async function importDatabase(jsonText: string): Promise<{ success: boolean; error?: string }> {
