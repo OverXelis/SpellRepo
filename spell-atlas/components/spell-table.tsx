@@ -298,9 +298,13 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
                     if (confirm(`Delete "${spell.name}"?`)) {
                       await deleteSpellApi(spell.id);
                       load();
+                      onDataChanged();
                     }
                   }}
-                  onSaved={() => load()}
+                  onSaved={() => {
+                    load();
+                    onDataChanged();
+                  }}
                 />
               ))}
             </tbody>
@@ -326,9 +330,13 @@ export function SpellTable({ runeLists, tags, onDataChanged }: Props) {
               if (confirm(`Delete "${spell.name}"?`)) {
                 await deleteSpellApi(spell.id);
                 load();
+                onDataChanged();
               }
             }}
-            onSaved={() => load()}
+            onSaved={() => {
+              load();
+              onDataChanged();
+            }}
           />
         ))}
       </div>

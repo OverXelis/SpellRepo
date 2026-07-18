@@ -16,7 +16,7 @@ import { withErrorHandling } from '@/lib/api-utils';
 import type { SpellRecord } from '@/lib/core/types';
 
 const MODEL = process.env.ANTHROPIC_BATCH_MODEL || process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
-const DEFAULT_BATCH_SIZE = 20;
+const DEFAULT_BATCH_SIZE = 10;
 const MAX_BATCH_SIZE = 50;
 const MAX_SPELLS_PER_RUN = 500;
 const DELAY_BETWEEN_BATCHES_MS = 400;
@@ -115,6 +115,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
               name: generateSpellName(updated, nameConfig),
               summary: updated.summary,
               description: updated.description,
+              spellStatus: updated.status,
               circleBase: updated.circleBase,
               primaryRune: updated.primaryRune,
               modifierRunes: updated.modifierRunes,

@@ -89,24 +89,49 @@ export function buildSpellContext(spell: SpellRecord, meanings: RuneMeaningConfi
 export function buildBatchSystemPrompt(): string {
   return `You are a fantasy worldbuilder writing spell names and descriptions for a sophisticated runic magic system used by a resourceful mage protagonist in a novel.
 
+WHAT YOU ARE WRITING:
+- These are SPELL CIRCLES (spells for short) -- completed castable spell formulas built from runes.
+- They are NOT rituals. In this story, rituals are a separate category of magic entirely.
+- Even if a Circle Base meaning mentions historical origins (e.g. body-tempering practices that inspired Targeted), NEVER call the result a ritual, tempering rite, tempering ritual, or similar. Describe it as a spell / spell circle being cast.
+- Forbidden flavor words unless a rune meaning explicitly requires them: "ritual", "rite", "ceremony", "tempering ritual".
+
 The magic system works by combining:
-1. A Circle Base (how the spell is structured/delivered: e.g. a projectile, a zone, a trap, a touch effect)
+1. A Circle Base (how the spell is structured/delivered: e.g. a single target, a projectile, a zone, a trap, an alteration)
 2. A Primary Rune (the core magical effect)
 3. Modifier Rune(s) -- zero, one, or two of these -- that alter the effect
-4. A Control Rune (optional) that changes how/when the spell triggers or sustains
+4. A Control Rune (optional) that changes how mana is paid and/or how concentration works
 
 FIRM MAGIC-SYSTEM RULES -- never bend these for a prettier description:
-- Instant activation: every spell activates instantly up front. The full mana cost is paid/spent before the effect activates.
-- No ongoing drain by default: do NOT describe continual mana drain, steadily draining the caster's reserves, sustained upkeep, or channeling-style maintenance unless the Control Rune is specifically Channeling. Channeling is the only exception that turns a spell into an ongoing channeled skill.
+- Default cast (no Channeling, no Draining): the spell activates once the mana cost is paid. Do not invent ongoing caster drain or sustained upkeep.
 - Follow each rune's own meaning text carefully (given below per spell). Prefer that text over assumptions from the rune's name alone.
 - Do not invent mechanics the runes do not support. If a combination is awkward, mark it dud or niche rather than rewriting a rune's meaning.
+- Additional modifiers stack onto the same core effect (e.g. Extend lengthens duration of whatever the spell actually does). They do NOT license changing a modifier's meaning.
+
+CONTROL RUNES -- Channeling vs Draining (both are concentration-related; they are not interchangeable):
+- Channeling:
+  - The CASTER (or engraved item acting as caster) must continually contribute focus and mana while the effect lasts.
+  - Concentration/attention must be maintained for the whole channeled duration; breaking it ends the spell.
+  - Main purpose: let a spell last longer than normal and/or allow a controlled end to the effect.
+  - Secondary: often a small power boost while channeled -- similar in kind to Empower, but weaker.
+  - Flavor may describe ongoing caster focus/mana feed ONLY when Channeling is present.
+- Draining:
+  - Mana is drawn from whatever the spell is cast by OR cast on (the mana source), not continually from the caster as upkeep.
+  - The caster must maintain concentration during the draining/casting process. If concentration breaks before activation, the spell falls apart and does not activate.
+  - Once enough mana has been gathered and the spell activates, concentration can end -- the effect is then a normal completed cast, not an ongoing channel.
+  - For the caster draining himself, this is mostly like a normal cast. Casting a Draining spell on someone else so THEIR mana pays the activation cost is a HEX in this story -- prefer the Hex tag when that fits.
+  - High-cost exception: if the mana cost is very high, Draining may pull mana gradually until the required amount is reached, then activate. That gradual pull is only to gather the activation cost, not Channeling-style sustained upkeep of an active effect.
+  - Enchanting note: an engraved spell circle already draws activation mana from the item it is on, so Draining is rarely useful for enchanting; it is mainly for hexes.
+- Never describe Channeling behavior (ongoing focus/mana to sustain an active effect) unless the Control Rune is Channeling.
+- Never describe Draining/hex behavior unless the Control Rune is Draining.
 
 EXEMPT modifier -- critical, often mishandled:
-- Exempt means carving a designated subject out of the spell's effect, usually by introducing their blood or mana into the casting so the magic recognizes and skips them.
-- Exempt is NOT "opposite", NOT inversion of the primary effect, and NOT a resistance/buff against that effect type.
-- Example of correct use: an Area fire spell with Exempt still burns the area, but designated allies who contributed blood/mana are untouched.
-- Example of incorrect use: turning Exempt + a slowing/speed primary into "grants resistance to slowing" or similar. That flexes Exempt into the opposite of what it means.
-- Targeted + Exempt can be especially awkward: if the spell's only subject is the target and Exempt removes them from the effect, the result may cancel itself or only matter in extremely narrow cases (e.g. releasing one specific person from a prior effect of that type). Do not invent a resistance reinterpretation to "save" such a spell -- mark it niche (or dud if it truly fails to cohere).
+- Exempt means carving a designated subject out of THIS spell's effect, usually by introducing their blood or mana into the casting so the magic recognizes and skips them.
+- Exempt is NOT "opposite", NOT inversion of the primary effect, and NOT a resistance/buff/ward against that effect type.
+- Correct: Area + Fire + Exempt burns the area; designated allies who contributed blood/mana are untouched by that fire.
+- Incorrect (never do this): Exempt + Swift/slow/speed -> "grants resistance to slowing/speed alteration" or "keeps them steady against slowing". That is inventing a resistance buff.
+- Also incorrect: describing Exempt as protective tempering, steadfastness against an effect, immunity ward, etc.
+- Targeted + Exempt is especially awkward: if the only subject is the target and Exempt removes them from the effect, the result may cancel itself or only matter in extremely narrow cases (e.g. releasing one specific person from a prior effect of that primary type). Mark those niche (or dud if they fail to cohere). Do NOT "rescue" them by turning Exempt into resistance.
+- When Extend (or another modifier) is added to an Exempt spell, it extends/modifies the real Exempt-based effect -- it does not unlock a resistance reinterpretation.
 
 IMPORTANT -- think creatively about each combination:
 - The same rune can be offensive OR defensive OR utility depending on the base and modifiers. Don't default to combat.
@@ -114,7 +139,7 @@ IMPORTANT -- think creatively about each combination:
 - A "trap" base isn't only for enemies -- it can create a beneficial zone allies walk through.
 - An "alteration" base changes properties -- this could buff allies or debuff enemies.
 - An "area" base could be a protective dome, not just a damage zone.
-- Creativity must stay inside the firm rules above. Cleverness that breaks Exempt, mana timing, or Channeling rules is wrong.
+- Creativity must stay inside the firm rules above. Cleverness that breaks Exempt, ritual/spell wording, or Channeling/Draining rules is wrong.
 
 SPELL USEFULNESS TIERS -- choose exactly one:
 - Functional (isDud false, isNiche false): the combination coherently does something a mage would reasonably cast in ordinary circumstances.
@@ -124,17 +149,26 @@ SPELL USEFULNESS TIERS -- choose exactly one:
 
 NAMING:
 - 2-4 words, evocative and thematic, reflecting the actual effect the runes produce.
-- Do not use cost/economy metaphors in the name (e.g. "Costly", "Draining", "Expensive") unless a rune explicitly justifies that framing -- and never imply ongoing mana drain without Channeling.
+- Do not use cost/economy metaphors in the name (e.g. "Costly", "Expensive") unless a rune explicitly justifies that framing.
+- Do not use "Ritual", "Rite", or "Tempering" in names for these spell circles.
 - For duds, the name may reflect failure or instability. For niche spells, the name should still match the real limited effect, not a fantasized stronger one.
+
+SELF-CHECK BEFORE SUBMITTING (mandatory):
+For every spell in the batch, verify all of the following and fix any failure before you call the tool:
+1. Description never calls it a ritual/rite/ceremony.
+2. If Exempt is present: description does NOT grant resistance, immunity, wards against, or "steadiness against" the primary effect. Exempt only excludes someone from this spell's effect (or is honestly marked niche/dud).
+3. Channeling/Draining flavor appears only when that control rune is actually present, and matches the definitions above.
+4. Extra modifiers (Extend, Empower, etc.) modify the same coherent effect -- they do not change Exempt into something else.
+5. isDud / isNiche flags match the usefulness tiers.
 
 You will be given a BATCH of multiple spell combinations at once, each with a unique id. For each one, generate:
 - name: 2-4 words, following the naming rules above.
 - description: one to two sentences. Functional: what it does and a practical use. Niche: what it does and why the use-case is narrow. Dud: what happens when cast (fizzle, collapse, no effect, etc.).
 - summary: a short tagline (max 50 characters) for a quick-reference table.
-- tags: 1-2 tags categorizing its PRIMARY purpose (Combat, Utility, Support, etc. -- not usefulness tier). Prefer existing tags; only introduce a new purpose tag if none fit and it could apply to other spells too. Do not invent a tag just to mean niche/dud -- that is what isNiche/isDud are for.
+- tags: 1-2 tags categorizing its PRIMARY purpose (Combat, Utility, Support, Hex, Enchanting, etc. -- not usefulness tier). Prefer existing tags; only introduce a new purpose tag if none fit and it could apply to other spells too. Do not invent a tag just to mean niche/dud -- that is what isNiche/isDud are for.
 - isDud / isNiche: set according to the usefulness tiers above.
 
-Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Defense, or Enchanting depending on what the base/rune/modifiers actually do.
+Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Defense, Hex, or Enchanting depending on what the base/rune/modifiers actually do.
 
 Respond ONLY by calling the ${BATCH_TOOL_NAME} tool with one entry per spell id you were given, in the same order, with no ids skipped or invented.`;
 }
@@ -145,7 +179,9 @@ export function buildBatchUserPrompt(spells: SpellRecord[], meanings: RuneMeanin
 
   return `Existing tags currently in use (prefer these): ${tagList}
 
-Generate a name, description, summary, and tags for each of these ${spells.length} spells:
+Generate a name, description, summary, and tags for each of these ${spells.length} spells.
+
+Before calling the tool, re-check every entry against: (a) spell not ritual, (b) Exempt is exclusion not resistance, (c) Channeling/Draining only if present and correctly used, (d) modifiers don't rewrite Exempt.
 
 ${spellBlocks}
 
@@ -220,14 +256,14 @@ export function applyGeneratedEntry(
   let finalTags = spell.tags;
 
   // Only auto-promote from normal; never overwrite favorite/hand-curated status.
-  if (spell.status === 'normal') {
-    if (generated.isDud) {
-      patch.status = 'dud';
-      generatedFields.push('status');
-    } else if (generated.isNiche) {
-      patch.status = 'niche';
-      generatedFields.push('status');
-    }
+  const markDud = spell.status === 'normal' && Boolean(generated.isDud);
+  const markNiche = spell.status === 'normal' && !markDud && Boolean(generated.isNiche);
+  if (markDud) {
+    patch.status = 'dud';
+    generatedFields.push('status');
+  } else if (markNiche) {
+    patch.status = 'niche';
+    generatedFields.push('status');
   }
 
   if (!hasName && generated.name?.trim()) {
@@ -242,7 +278,12 @@ export function applyGeneratedEntry(
     patch.summary = generated.summary.trim().slice(0, 100);
     generatedFields.push('summary');
   }
-  if (!hasTags && Array.isArray(generated.tags) && generated.tags.length > 0) {
+  // Duds should not keep purpose tags -- they clutter filters.
+  if (markDud) {
+    patch.tags = [];
+    finalTags = [];
+    generatedFields.push('tags');
+  } else if (!hasTags && Array.isArray(generated.tags) && generated.tags.length > 0) {
     const reconciled = reconcileTags(generated.tags, knownTags);
     patch.tags = reconciled.finalTags;
     finalTags = reconciled.finalTags;
