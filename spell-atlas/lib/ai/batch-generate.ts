@@ -32,7 +32,8 @@ export const BATCH_TOOL: Anthropic.Tool = {
             name: { type: 'string', description: '2-4 word evocative spell name.' },
             description: {
               type: 'string',
-              description: 'One to two sentences describing what this spell actually does and a practical use for it.',
+              description:
+                'One to two sentences. For functional spells: what it does and a practical use. For incompatible combinations (isDud true): what happens when cast -- typically fizzling, failing to cohere, or producing no useful effect.',
             },
             summary: { type: 'string', description: 'A short tagline, max 50 characters, for quick reference in a table.' },
             tags: {
@@ -41,8 +42,13 @@ export const BATCH_TOOL: Anthropic.Tool = {
               description:
                 '1-2 tags for this spell. Strongly prefer reusing one of the existing tags listed in the prompt. Only propose a new tag if none of the existing ones fit at all, and only if the concept is general enough to plausibly apply to other spells too (never a tag specific to this one spell).',
             },
+            isDud: {
+              type: 'boolean',
+              description:
+                'True when this rune combination lacks compatibility and would fizzle or fail in-world rather than producing a functional spell. Do not force a working spell when the runes do not logically combine.',
+            },
           },
-          required: ['id', 'name', 'description', 'summary', 'tags'],
+          required: ['id', 'name', 'description', 'summary', 'tags', 'isDud'],
         },
       },
     },
@@ -92,11 +98,19 @@ IMPORTANT -- think creatively about each combination:
 - An "area" base could be a protective dome, not just a damage zone.
 - Read each rune's own description carefully (given below per spell) -- it may explicitly describe non-obvious or dual-purpose behavior. Follow that description's intent over any assumption you'd otherwise make from the rune's name alone.
 
+DUD / INCOMPATIBLE COMBINATIONS -- important:
+- The combinatorial system generates every valid rune pairing, but NOT every pairing produces a functional spell in-world.
+- In the story, spells that lack rune compatibility fizzle out, dissipate harmlessly, or fail to cohere -- this is normal and expected.
+- When a combination does not logically work together, do NOT stretch or contort the logic to invent a functional use. It is better to honestly describe a failed or inert combination than to force a clever effect that strains credulity.
+- For these spells: set isDud to true. Give a brief honest name and description of what happens when the mage tries it (fizzle, collapse, no effect, unstable flash, etc.). Tags can reflect failure or non-function if an existing tag fits.
+- Reserve creative, functional descriptions for combinations that genuinely cohere. Be willing to mark combinations as duds when the runes clash -- not every spell needs to do something useful.
+
 You will be given a BATCH of multiple spell combinations at once, each with a unique id. For each one, generate:
-- name: 2-4 words, evocative and thematic, reflecting the spell's actual function (not just the rune name alone).
-- description: one to two sentences on what it actually does and a practical use for it.
+- name: 2-4 words, evocative and thematic. For duds, the name can reflect failure or instability rather than a useful effect.
+- description: one to two sentences. For functional spells: what it does and a practical use. For duds: what happens when cast (typically fizzling or failing to cohere).
 - summary: a short tagline (max 50 characters) for a quick-reference table.
 - tags: 1-2 tags categorizing its PRIMARY purpose. You will be given the list of tags currently in use -- strongly prefer reusing one of those. Only introduce a new tag if none of the existing ones fit at all, and only if it's a general concept that could reasonably apply to other spells too (never invent a tag specific to just this one spell -- that defeats the point of tagging).
+- isDud: true when the rune combination lacks compatibility and would fizzle or fail in-world; false when it produces a functional spell.
 
 Be diverse -- not every spell is "Combat". Many combinations are Utility, Support, Defense, or Enchanting depending on what the base/rune/modifiers actually do.
 
@@ -156,6 +170,7 @@ interface GeneratedSpellEntry {
   description: string;
   summary: string;
   tags: string[];
+  isDud?: boolean;
 }
 
 /** Applies a model-generated entry to one spell, only filling fields that
@@ -176,10 +191,15 @@ export function applyGeneratedEntry(
 
   if (hasName && hasDescription && hasSummary && hasTags) return null;
 
-  const patch: { customName?: string; description?: string; summary?: string; tags?: string[] } = {};
+  const patch: { customName?: string; description?: string; summary?: string; tags?: string[]; status?: 'normal' | 'dud' } = {};
   const generatedFields: string[] = [];
   let newTagsCreated: string[] = [];
   let finalTags = spell.tags;
+
+  if (generated.isDud && spell.status === 'normal') {
+    patch.status = 'dud';
+    generatedFields.push('status');
+  }
 
   if (!hasName && generated.name?.trim()) {
     patch.customName = generated.name.trim();

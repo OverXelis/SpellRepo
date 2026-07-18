@@ -64,7 +64,8 @@ export default function ContemplatePage() {
         <h1 className="page-title">Contemplate Meaning</h1>
         <p className="page-subtitle">
           Batch-generate spell names and descriptions, then review what the model produced before diving back into the
-          Builder.
+          Builder. Incompatible rune pairings may be marked as duds that fizzle out rather than forced into working
+          spells.
         </p>
       </div>
 
