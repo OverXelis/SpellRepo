@@ -8,7 +8,7 @@ import type { Taxonomy } from '@/lib/db/taxonomy';
  * without ever needing the whole spell table in context.
  */
 export function buildSystemPrompt(taxonomy: Taxonomy): string {
-  const { runeLists, runeNameConfig, tags, tagCategories, totalSpellCount, statusCounts } = taxonomy;
+  const { runeLists, runeNameConfig, tags, tagCategories, totalSpellCount, statusCounts, contentCounts } = taxonomy;
 
   const displayName = (kind: 'primary' | 'modifier' | 'control', name: string): string => {
     const map =
@@ -64,6 +64,7 @@ ${tagLines.length > 0 ? tagLines.join('\n') : '  (no tags yet)'}
 
 ## Database size
 - Total spells: ${totalSpellCount}
+- Filled in (name+summary+description): ${contentCounts.filled}, Unfilled: ${contentCounts.unfilled}
 - Favorites: ${statusCounts.favorite}, Normal: ${statusCounts.normal}, Niche: ${statusCounts.niche}, Duds: ${statusCounts.dud}
 
 ## How to answer

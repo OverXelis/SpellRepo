@@ -54,6 +54,12 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
           description:
             "Filter by curation status. Omit to include all. 'niche' spells only work in extremely narrow scenarios; 'dud' spells fizzle or fail -- usually skip both unless asked.",
         },
+        content: {
+          type: 'string',
+          enum: ['filled', 'unfilled'],
+          description:
+            "Filter by whether name, summary, and description are filled in. Prefer 'filled' when recommending usable spells for a scene.",
+        },
         limit: { type: 'number', description: 'Max rows to return (default 10, hard cap 25).' },
         offset: { type: 'number', description: 'Pagination offset (default 0).' },
       },

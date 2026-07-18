@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
 import { getRuneLists, getRuneMeanings, getRuneNameConfig } from '@/lib/db/naming';
 import { getAllTags } from '@/lib/db/tags';
-import { countAllSpells, countByStatus } from '@/lib/db/spells';
+import { countAllSpells, countByContent, countByStatus, type ContentCounts } from '@/lib/db/spells';
 import type { RuneLists, RuneMeaningConfig, RuneNameConfig, TagInfo } from '@/lib/core/types';
 
 export interface Taxonomy {
@@ -12,6 +12,8 @@ export interface Taxonomy {
   tagCategories: string[];
   totalSpellCount: number;
   statusCounts: { normal: number; favorite: number; dud: number; niche: number };
+  /** Spells with name+summary+description filled vs still blank. */
+  contentCounts: ContentCounts;
 }
 
 /**
@@ -34,5 +36,6 @@ export function getTaxonomy(db: Database.Database): Taxonomy {
     tagCategories,
     totalSpellCount: countAllSpells(db),
     statusCounts: countByStatus(db),
+    contentCounts: countByContent(db),
   };
 }

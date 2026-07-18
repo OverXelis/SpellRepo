@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Taxonomy } from '@/lib/db/taxonomy';
+import type { ContentFilter } from '@/lib/db/spells';
 import { fetchTaxonomy } from '@/lib/api-client';
 import { PageBanner } from '@/components/page-banner';
 import { RunePanel } from '@/components/rune-panel';
@@ -11,6 +12,7 @@ import { SpellTable } from '@/components/spell-table';
 export default function BuilderPage() {
   const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [contentFilter, setContentFilter] = useState<'' | ContentFilter>('');
 
   const reload = useCallback(() => {
     setError(null);
@@ -24,6 +26,10 @@ export default function BuilderPage() {
     reload();
   }, [reload]);
 
+  const toggleContentFilter = (value: ContentFilter) => {
+    setContentFilter((prev) => (prev === value ? '' : value));
+  };
+
   return (
     <div className="page-shell space-y-6">
       <PageBanner />
@@ -36,6 +42,22 @@ export default function BuilderPage() {
         {taxonomy && (
           <div className="flex flex-wrap gap-2">
             <span className="ui-badge ui-badge-accent">{taxonomy.totalSpellCount} spells</span>
+            <button
+              type="button"
+              onClick={() => toggleContentFilter('filled')}
+              className={`ui-badge ${contentFilter === 'filled' ? 'ui-badge-primary' : 'ui-badge-muted'} cursor-pointer`}
+              title="Show spells with name, summary, and description filled in"
+            >
+              {taxonomy.contentCounts.filled} filled
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleContentFilter('unfilled')}
+              className={`ui-badge ${contentFilter === 'unfilled' ? 'ui-badge-primary' : 'ui-badge-muted'} cursor-pointer`}
+              title="Show spells still missing name, summary, or description"
+            >
+              {taxonomy.contentCounts.unfilled} unfilled
+            </button>
             <span className="ui-badge ui-badge-primary">{taxonomy.statusCounts.favorite} favorites</span>
             <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.niche} niche</span>
             <span className="ui-badge ui-badge-muted">{taxonomy.statusCounts.dud} duds</span>
@@ -82,7 +104,13 @@ export default function BuilderPage() {
 
           <TagManager tags={taxonomy.tags} onChanged={reload} />
 
-          <SpellTable runeLists={taxonomy.runeLists} tags={taxonomy.tags} onDataChanged={reload} />
+          <SpellTable
+            runeLists={taxonomy.runeLists}
+            tags={taxonomy.tags}
+            onDataChanged={reload}
+            contentFilter={contentFilter}
+            onContentFilterChange={setContentFilter}
+          />
         </>
       )}
     </div>

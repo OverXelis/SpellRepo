@@ -30,6 +30,7 @@ export function searchSpellsApi(filters: SearchFilters): Promise<SearchResult> {
   if (filters.modifierRunes?.length) params.set('modifierRunes', filters.modifierRunes.join(','));
   if (filters.controlRune) params.set('controlRune', filters.controlRune);
   if (filters.status) params.set('status', filters.status);
+  if (filters.content) params.set('content', filters.content);
   if (filters.needsEnrichment) params.set('needsEnrichment', 'true');
   if (filters.limit) params.set('limit', String(filters.limit));
   if (filters.offset) params.set('offset', String(filters.offset));
