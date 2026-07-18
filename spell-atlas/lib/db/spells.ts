@@ -466,10 +466,15 @@ function buildWhere(db: Database.Database, filters: SearchFilters): { where: str
     }
   }
   if (filters.needsEnrichment) {
+    // Duds intentionally have no purpose tags (they are cleared on dud status),
+    // so empty tags must not keep re-queueing them for Contemplate generation.
     clauses.push(
       `NOT (
         s.custom_name != '' AND s.summary != '' AND s.description != ''
-        AND EXISTS (SELECT 1 FROM spell_tags st WHERE st.spell_id = s.id)
+        AND (
+          s.status = 'dud'
+          OR EXISTS (SELECT 1 FROM spell_tags st WHERE st.spell_id = s.id)
+        )
       )`
     );
   }

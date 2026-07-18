@@ -234,9 +234,9 @@ export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }
         <h2 className="ui-panel-header">Contemplate meaning</h2>
         <p className="mt-1 text-sm text-foreground-muted">
           Like a mage meditating on the Dao, run batch generation here to fill in names, summaries, descriptions, and
-          tags for spells that still need them. Smaller batches (default 10) help the model keep firm rules like Exempt
-          and Channeling/Draining straight. Incompatible combinations may be marked dud, and extremely narrow-but-working
-          ones niche. Review the results below before returning to the Builder.
+          tags for spells that still need them. Duds intentionally have no tags and are skipped once name/summary/
+          description are filled. Smaller batches (default 10) help the model keep firm rules like Exempt and
+          Channeling/Draining straight. Review the results below before returning to the Builder.
         </p>
       </div>
 
