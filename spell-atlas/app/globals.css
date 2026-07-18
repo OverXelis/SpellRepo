@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+:root {
+  --background: #070a0e;
+  --surface: #0f1419;
+  --surface-raised: #161d26;
+  --surface-hover: #1c2632;
+  --border: #2a3644;
+  --border-subtle: #1a222c;
+  --foreground: #e8edf2;
+  --foreground-muted: #94a3b8;
+  --foreground-subtle: #64748b;
+  --accent: #48c9d8;
+  --accent-hover: #62d4e0;
+  --accent-muted: rgba(72, 201, 216, 0.12);
+  --primary: #1e5bb4;
+  --primary-hover: #2870d4;
+  --primary-muted: rgba(30, 91, 180, 0.15);
+  --danger: #ef4444;
+  --danger-muted: rgba(239, 68, 68, 0.12);
+  --warning: #f59e0b;
+  --success: #34d399;
+  --nav-height: 3.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-muted: var(--primary-muted);
+  --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+* {
+  scrollbar-color: #3d4f63 var(--surface);
+}
+
+@layer components {
+  .ui-input {
+    @apply w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors;
+    @apply placeholder:text-foreground-subtle focus:border-accent focus:ring-1 focus:ring-accent/30;
+    min-height: 2.75rem;
+  }
+
+  .ui-input-sm {
+    @apply rounded-md border border-border bg-background px-2.5 py-2 text-sm text-foreground outline-none transition-colors;
+    @apply placeholder:text-foreground-subtle focus:border-accent focus:ring-1 focus:ring-accent/30;
+    min-height: 2.5rem;
+  }
+
+  .ui-select {
+    @apply rounded-md border border-border bg-surface-raised px-3 py-2.5 text-sm text-foreground outline-none transition-colors;
+    @apply focus:border-accent focus:ring-1 focus:ring-accent/30;
+    min-height: 2.75rem;
+  }
+
+  .ui-select-sm {
+    @apply rounded-md border border-border bg-surface-raised px-2.5 py-2 text-sm text-foreground outline-none transition-colors;
+    @apply focus:border-accent focus:ring-1 focus:ring-accent/30;
+    min-height: 2.5rem;
+  }
+
+  .ui-textarea {
+    @apply w-full resize-y rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors;
+    @apply placeholder:text-foreground-subtle focus:border-accent focus:ring-1 focus:ring-accent/30;
+    min-height: 5rem;
+  }
+
+  .ui-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2.5 text-sm font-medium transition-colors;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    min-height: 2.75rem;
+  }
+
+  .ui-btn-sm {
+    @apply inline-flex items-center justify-center gap-1 rounded-md px-2.5 py-2 text-xs font-medium transition-colors;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    min-height: 2.25rem;
+  }
+
+  .ui-btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .ui-btn-accent {
+    @apply bg-accent text-background hover:bg-accent-hover;
+  }
+
+  .ui-btn-secondary {
+    @apply border border-border bg-surface-raised text-foreground hover:bg-surface-hover;
+  }
+
+  .ui-btn-ghost {
+    @apply text-foreground-muted hover:bg-surface-hover hover:text-foreground;
+  }
+
+  .ui-btn-danger {
+    @apply border border-red-900/60 bg-danger-muted text-red-300 hover:bg-red-950/60;
+  }
+
+  .ui-panel {
+    @apply rounded-lg border border-border bg-surface p-4;
+  }
+
+  .ui-panel-header {
+    @apply text-sm font-semibold text-foreground;
+  }
+
+  .ui-label {
+    @apply block text-xs font-medium uppercase tracking-wide text-foreground-subtle;
+  }
+
+  .ui-badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium;
+  }
+
+  .ui-badge-accent {
+    @apply bg-accent-muted text-accent;
+  }
+
+  .ui-badge-muted {
+    @apply bg-surface-hover text-foreground-muted;
+  }
+
+  .ui-badge-primary {
+    @apply bg-primary-muted text-blue-300;
+  }
+
+  .page-shell {
+    @apply mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold text-foreground sm:text-2xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm text-foreground-muted;
+  }
+}
