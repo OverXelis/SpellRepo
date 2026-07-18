@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getDb } from '@/lib/db/client';
-import { ensureDefaultRunesSeeded, getRuneMeanings } from '@/lib/db/naming';
+import { ensureDefaultRunesSeeded, getRuneMeanings, getRuneNameConfig } from '@/lib/db/naming';
 import { getAllTags } from '@/lib/db/tags';
-import { getSpellsForEnrichment, type SearchFilters } from '@/lib/db/spells';
+import { getSpellById, getSpellsForEnrichment, type SearchFilters } from '@/lib/db/spells';
 import {
   applyGeneratedEntry,
   BATCH_TOOL,
@@ -11,6 +11,7 @@ import {
   buildBatchUserPrompt,
   extractBatchToolInput,
 } from '@/lib/ai/batch-generate';
+import { generateSpellName } from '@/lib/core/spell-name-generator';
 import { withErrorHandling } from '@/lib/api-utils';
 import type { SpellRecord } from '@/lib/core/types';
 
@@ -47,6 +48,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const db = getDb();
   ensureDefaultRunesSeeded(db);
   const meanings = getRuneMeanings(db);
+  const nameConfig = getRuneNameConfig(db);
   const knownTags = new Set(getAllTags(db).map((t) => t.name));
 
   const spells = getSpellsForEnrichment(db, body.filters ?? {}, maxSpells);
@@ -105,13 +107,20 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
             }
             const result = applyGeneratedEntry(db, spell, generated, knownTags);
             succeeded += 1;
+            const updated = getSpellById(db, spell.id) ?? spell;
             write({
               type: 'spell',
               spellId: spell.id,
               status: 'success',
-              name: result?.name ?? generated.name,
+              name: generateSpellName(updated, nameConfig),
+              summary: updated.summary,
+              description: updated.description,
+              circleBase: updated.circleBase,
+              primaryRune: updated.primaryRune,
+              modifierRunes: updated.modifierRunes,
+              controlRune: updated.controlRune,
               generatedFields: result?.generatedFields ?? [],
-              tags: result?.tags ?? [],
+              tags: result?.tags ?? updated.tags,
               newTagsCreated: result?.newTagsCreated ?? [],
             });
           }

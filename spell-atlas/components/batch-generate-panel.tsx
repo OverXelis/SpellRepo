@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RuneLists } from '@/lib/core/types';
+import type { GeneratedReviewBatch, GeneratedReviewEntry } from '@/lib/generated-review';
+import { loadReviewBatches, saveReviewBatches } from '@/lib/generated-review';
 import { estimateGenerationCost, searchSpellsApi, type CostEstimate } from '@/lib/api-client';
-import { ChevronRightIcon } from '@/components/ui/icons';
 
 interface Props {
   runeLists: RuneLists;
   onDataChanged: () => void;
+  onReviewUpdated?: (batches: GeneratedReviewBatch[]) => void;
 }
 
 interface LogEntry {
@@ -19,8 +21,15 @@ interface LogEntry {
 const DEFAULT_MAX_SPELLS = 25;
 const DEFAULT_BATCH_SIZE = 20;
 
-export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
-  const [open, setOpen] = useState(false);
+function createReviewBatch(): GeneratedReviewBatch {
+  return {
+    id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    startedAt: Date.now(),
+    entries: [],
+  };
+}
+
+export function BatchGeneratePanel({ runeLists, onDataChanged, onReviewUpdated }: Props) {
   const [circleBase, setCircleBase] = useState('');
   const [primaryRune, setPrimaryRune] = useState('');
   const [maxSpells, setMaxSpells] = useState(DEFAULT_MAX_SPELLS);
@@ -35,14 +44,25 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
   const [summary, setSummary] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const currentBatchRef = useRef<GeneratedReviewBatch | null>(null);
 
   const scopeFilters = {
     circleBase: circleBase || undefined,
     primaryRune: primaryRune || undefined,
   };
 
+  const syncReviewBatches = useCallback(
+    (updater: (prev: GeneratedReviewBatch[]) => GeneratedReviewBatch[]) => {
+      const prev = loadReviewBatches();
+      const next = updater(prev);
+      saveReviewBatches(next);
+      onReviewUpdated?.(next);
+      return next;
+    },
+    [onReviewUpdated]
+  );
+
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountLoading(true);
@@ -67,8 +87,7 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, circleBase, primaryRune, maxSpells, batchSize]);
+  }, [circleBase, primaryRune, maxSpells, batchSize]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ block: 'nearest' });
@@ -78,12 +97,29 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
     setLog((prev) => [...prev, { id: `${prev.length}-${Date.now()}`, text, tone }]);
   };
 
+  const addReviewEntry = (entry: GeneratedReviewEntry) => {
+    const batch = currentBatchRef.current;
+    if (!batch) return;
+    batch.entries.unshift(entry);
+    syncReviewBatches((prev) => {
+      const existing = prev.find((b) => b.id === batch.id);
+      if (existing) {
+        return prev.map((b) => (b.id === batch.id ? { ...batch, entries: [...batch.entries] } : b));
+      }
+      return [{ ...batch, entries: [...batch.entries] }, ...prev];
+    });
+  };
+
   const start = async () => {
     setRunning(true);
     setLog([]);
     setSummary(null);
     const controller = new AbortController();
     abortRef.current = controller;
+
+    const batch = createReviewBatch();
+    currentBatchRef.current = batch;
+    syncReviewBatches((prev) => [batch, ...prev.filter((b) => b.id !== batch.id)]);
 
     try {
       const res = await fetch('/api/generate', {
@@ -120,6 +156,12 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
         appendLog(err instanceof Error ? err.message : 'Stream failed', 'error');
       }
     } finally {
+      const batchRef = currentBatchRef.current;
+      if (batchRef) {
+        batchRef.completedAt = Date.now();
+        syncReviewBatches((prev) => prev.map((b) => (b.id === batchRef.id ? { ...batchRef, entries: [...batchRef.entries] } : b)));
+      }
+      currentBatchRef.current = null;
       setRunning(false);
       abortRef.current = null;
       onDataChanged();
@@ -140,6 +182,23 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
           const tagsStr = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
           const newTagNote = newTags.length > 0 ? ` (new tag${newTags.length > 1 ? 's' : ''}: ${newTags.join(', ')})` : '';
           appendLog(`OK ${event.name}${tagsStr} (${fieldsStr})${newTagNote}`, 'success');
+
+          if (typeof event.spellId === 'string') {
+            addReviewEntry({
+              id: event.spellId,
+              batchId: currentBatchRef.current?.id ?? 'unknown',
+              generatedAt: Date.now(),
+              name: String(event.name ?? ''),
+              summary: String(event.summary ?? ''),
+              description: String(event.description ?? ''),
+              tags,
+              generatedFields: fields,
+              circleBase: String(event.circleBase ?? ''),
+              primaryRune: String(event.primaryRune ?? ''),
+              modifierRunes: Array.isArray(event.modifierRunes) ? (event.modifierRunes as string[]) : [],
+              controlRune: typeof event.controlRune === 'string' ? event.controlRune : null,
+            });
+          }
         } else {
           appendLog(`ERR spell ${event.spellId}: ${event.message}`, 'error');
         }
@@ -163,33 +222,17 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
     abortRef.current?.abort();
   };
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="ui-panel flex w-full items-center justify-between text-left hover:bg-surface-hover/60"
-      >
-        <span className="text-sm font-semibold text-foreground">Generate descriptions with AI</span>
-        <ChevronRightIcon className="text-foreground-subtle" />
-      </button>
-    );
-  }
-
   return (
-    <div className="ui-panel space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="ui-panel-header">Generate descriptions with AI</h2>
-        <button type="button" onClick={() => setOpen(false)} className="ui-btn-sm ui-btn-ghost">
-          Collapse
-        </button>
+    <div className="ui-panel space-y-4">
+      <div>
+        <h2 className="ui-panel-header">Contemplate meaning</h2>
+        <p className="mt-1 text-sm text-foreground-muted">
+          Like a mage meditating on the Dao, run batch generation here to fill in names, summaries, descriptions, and
+          tags for spells that still need them. Review the results in the table below before returning to the Builder.
+        </p>
       </div>
-      <p className="text-xs text-foreground-muted">
-        Fills in name/description/summary/tags for spells missing any of them, in batches of multiple spells per API
-        call. Never overwrites fields you&apos;ve already set.
-      </p>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <select
           value={circleBase}
           onChange={(e) => setCircleBase(e.target.value)}
@@ -267,16 +310,11 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
 
       <div className="flex gap-2">
         {!running ? (
-          <button
-            type="button"
-            onClick={start}
-            disabled={!availableCount}
-            className="ui-btn-sm ui-btn-primary"
-          >
-            Start
+          <button type="button" onClick={start} disabled={!availableCount} className="ui-btn ui-btn-primary">
+            Begin contemplation
           </button>
         ) : (
-          <button type="button" onClick={stop} className="ui-btn-sm ui-btn-danger">
+          <button type="button" onClick={stop} className="ui-btn ui-btn-danger">
             Stop
           </button>
         )}

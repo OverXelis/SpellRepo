@@ -6,7 +6,6 @@ import { fetchTaxonomy } from '@/lib/api-client';
 import { PageBanner } from '@/components/page-banner';
 import { RunePanel } from '@/components/rune-panel';
 import { TagManager } from '@/components/tag-manager';
-import { BatchGeneratePanel } from '@/components/batch-generate-panel';
 import { SpellTable } from '@/components/spell-table';
 
 export default function BuilderPage() {
@@ -59,18 +58,29 @@ export default function BuilderPage() {
 
       {taxonomy && (
         <>
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid items-start gap-4 lg:grid-cols-2">
             <RunePanel
+              title="Circle bases and primary runes"
+              kinds={['circleBase', 'primary']}
+              showAddForm
               runeLists={taxonomy.runeLists}
               runeNameConfig={taxonomy.runeNameConfig}
               runeMeanings={taxonomy.runeMeanings}
               onChanged={reload}
             />
-            <div className="space-y-4">
-              <TagManager tags={taxonomy.tags} onChanged={reload} />
-              <BatchGeneratePanel runeLists={taxonomy.runeLists} onDataChanged={reload} />
-            </div>
+            <RunePanel
+              title="Modifier and control runes"
+              kinds={['modifier', 'control']}
+              showModifierPairs
+              runeLists={taxonomy.runeLists}
+              runeNameConfig={taxonomy.runeNameConfig}
+              runeMeanings={taxonomy.runeMeanings}
+              onChanged={reload}
+            />
           </div>
+
+          <TagManager tags={taxonomy.tags} onChanged={reload} />
+
           <SpellTable runeLists={taxonomy.runeLists} tags={taxonomy.tags} onDataChanged={reload} />
         </>
       )}
