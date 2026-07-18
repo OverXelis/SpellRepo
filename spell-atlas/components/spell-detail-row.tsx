@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { SpellRecord, SpellStatus } from '@/lib/core/types';
 import { getSpell, updateSpellApi } from '@/lib/api-client';
+import { StarIcon } from '@/components/ui/icons';
 
 interface Props {
   spellId: string;
@@ -29,7 +30,7 @@ export function SpellDetailRow({ spellId, availableTags, onSaved }: Props) {
     });
   }, [spellId]);
 
-  if (!spell) return <p className="text-xs text-neutral-500">Loading details...</p>;
+  if (!spell) return <p className="text-xs text-foreground-subtle">Loading details...</p>;
 
   const save = async (patch: Partial<{ status: SpellStatus; description: string; customName: string; summary: string; tags: string[] }>) => {
     setSaving(true);
@@ -57,79 +58,98 @@ export function SpellDetailRow({ spellId, availableTags, onSaved }: Props) {
   };
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      <div className="space-y-2">
-        <label className="block text-xs font-medium text-neutral-500">Custom name (blank = auto-generated)</label>
-        <input
-          value={customName}
-          onChange={(e) => setCustomName(e.target.value)}
-          onBlur={() => save({ customName })}
-          className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500"
-        />
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-3">
+        <div>
+          <label className="ui-label mb-1.5">Custom name (blank = auto-generated)</label>
+          <input
+            value={customName}
+            onChange={(e) => setCustomName(e.target.value)}
+            onBlur={() => save({ customName })}
+            className="ui-input-sm"
+          />
+        </div>
 
-        <label className="block text-xs font-medium text-neutral-500">Summary (short, ~100 chars)</label>
-        <input
-          value={summary}
-          maxLength={100}
-          onChange={(e) => setSummary(e.target.value)}
-          onBlur={() => save({ summary })}
-          className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500"
-        />
+        <div>
+          <label className="ui-label mb-1.5">Summary (short, ~100 chars)</label>
+          <input
+            value={summary}
+            maxLength={100}
+            onChange={(e) => setSummary(e.target.value)}
+            onBlur={() => save({ summary })}
+            className="ui-input-sm"
+          />
+        </div>
 
-        <label className="block text-xs font-medium text-neutral-500">Status</label>
-        <div className="flex gap-2">
-          {(['normal', 'favorite', 'dud'] as SpellStatus[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => save({ status: s })}
-              className={`rounded px-2 py-1 text-xs ${
-                spell.status === s ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
-              }`}
-            >
-              {s === 'favorite' ? '★ Favorite' : s === 'dud' ? '✕ Dud' : 'Normal'}
-            </button>
-          ))}
+        <div>
+          <label className="ui-label mb-1.5">Status</label>
+          <div className="flex flex-wrap gap-2">
+            {(['normal', 'favorite', 'dud'] as SpellStatus[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => save({ status: s })}
+                className={`ui-btn-sm ${
+                  spell.status === s
+                    ? s === 'favorite'
+                      ? 'bg-warning/20 text-warning'
+                      : s === 'dud'
+                      ? 'bg-danger-muted text-red-300'
+                      : 'ui-btn-primary'
+                    : 'ui-btn-secondary'
+                }`}
+              >
+                {s === 'favorite' && <StarIcon filled className="text-warning" />}
+                {s === 'favorite' ? 'Favorite' : s === 'dud' ? 'Dud' : 'Normal'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-xs font-medium text-neutral-500">Description / notes</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={() => save({ description })}
-          rows={4}
-          className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500"
-          placeholder="How does this spell manifest? When would the MC use it? This is what the AI chat reads when discussing this spell."
-        />
-
-        <label className="block text-xs font-medium text-neutral-500">Tags</label>
-        <div className="flex flex-wrap gap-1.5">
-          {availableTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`rounded px-2 py-0.5 text-xs ${
-                tags.includes(tag) ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1.5">
-          <input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addNewTag()}
-            placeholder="New tag..."
-            className="flex-1 rounded border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 outline-none focus:border-neutral-600"
+      <div className="space-y-3">
+        <div>
+          <label className="ui-label mb-1.5">Description / notes</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => save({ description })}
+            rows={5}
+            className="ui-textarea"
+            placeholder="How does this spell manifest? When would the MC use it? This is what the AI chat reads when discussing this spell."
           />
-          <button onClick={addNewTag} className="rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-700">
-            Add
-          </button>
         </div>
-        {saving && <p className="text-[10px] text-neutral-600">Saving...</p>}
+
+        <div>
+          <label className="ui-label mb-1.5">Tags</label>
+          <div className="flex flex-wrap gap-1.5">
+            {availableTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`ui-btn-sm ${
+                  tags.includes(tag) ? 'ui-btn-primary' : 'ui-btn-secondary'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addNewTag()}
+              placeholder="New tag..."
+              className="ui-input-sm flex-1"
+            />
+            <button type="button" onClick={addNewTag} className="ui-btn-sm ui-btn-secondary">
+              Add
+            </button>
+          </div>
+          {saving && <p className="text-[11px] text-foreground-subtle">Saving...</p>}
+        </div>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ Everything lives in one SQLite file on your server, so both your Mac and Windows
 
 ## Batch AI description generation
 
-Adapted from an earlier standalone Python script the author used to bulk-fill spell names/descriptions/summaries/tags via Claude. The Builder's "✨ Generate descriptions with AI" panel does the same thing, with two changes that matter as the rune list keeps growing:
+Adapted from an earlier standalone Python script the author used to bulk-fill spell names/descriptions/summaries/tags via Claude. The Builder's "Generate descriptions with AI" panel does the same thing, with two changes that matter as the rune list keeps growing:
 
 - **Batched, not one-call-per-spell.** Each API call handles many spells at once (default 20, configurable), using Claude's tool-use to force structured output instead of regex-parsing free text. A rune that generates 130 new spells is ~7 calls, not 130.
 - **Prompt caching.** The system prompt is marked as an Anthropic cache breakpoint, so batches after the first in a run reuse the cached prefix instead of re-billing it in full.

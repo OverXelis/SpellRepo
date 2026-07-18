@@ -13,6 +13,7 @@ import {
   undoLastBatchApi,
 } from '@/lib/api-client';
 import { getAllModifierPairKeys, parseModifierPairKey } from '@/lib/core/spell-name-generator';
+import { ArrowRightIcon, ChevronDownIcon, ChevronRightIcon } from '@/components/ui/icons';
 
 const KIND_LABEL: Record<RuneKind, string> = {
   circleBase: 'Circle Base',
@@ -114,7 +115,7 @@ function RuneRow({
   };
 
   return (
-    <div className="rounded border border-neutral-800 bg-neutral-900/50 px-2 py-1.5 text-sm space-y-1">
+    <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2.5 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         {editingName ? (
           <input
@@ -123,11 +124,12 @@ function RuneRow({
             onChange={(e) => setNameValue(e.target.value)}
             onBlur={saveRename}
             onKeyDown={(e) => e.key === 'Enter' && saveRename()}
-            className="w-28 rounded bg-neutral-950 px-1.5 py-0.5 text-neutral-100 outline-none border border-neutral-700"
+            className="ui-input-sm w-32"
           />
         ) : (
           <button
-            className="min-w-[6rem] text-left font-medium text-neutral-100 hover:underline"
+            type="button"
+            className="min-w-[6rem] text-left font-medium text-foreground hover:text-accent"
             onClick={() => setEditingName(true)}
             title="Click to rename"
           >
@@ -136,20 +138,20 @@ function RuneRow({
         )}
         {showDisplayName && (
           <>
-            <span className="text-neutral-600">→</span>
+            <ArrowRightIcon className="text-foreground-subtle" />
             <input
               value={displayValue}
               onChange={(e) => setDisplayValue(e.target.value)}
               onBlur={saveDisplayName}
               onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
               placeholder="display name"
-              className="w-32 rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-neutral-300 outline-none border border-neutral-800 focus:border-neutral-600"
+              className="ui-input-sm w-36 text-xs"
             />
           </>
         )}
         {confirmingDelete ? (
-          <span className="flex items-center gap-1 text-xs">
-            <span className="text-red-400">
+          <span className="flex flex-wrap items-center gap-1 text-xs">
+            <span className="text-red-300">
               {countLoading
                 ? 'Checking affected spells...'
                 : affectedCount === null
@@ -159,25 +161,27 @@ function RuneRow({
                 : `Delete "${name}"? (0 spells affected)`}
             </span>
             <button
+              type="button"
               onClick={handleDelete}
               disabled={busy || countLoading}
-              className="rounded bg-red-900/60 px-1.5 py-0.5 text-red-200 disabled:opacity-50"
+              className="ui-btn-sm ui-btn-danger"
             >
               Yes, delete
             </button>
             <button
+              type="button"
               onClick={() => {
                 setConfirmingDelete(false);
                 setAffectedCount(null);
               }}
-              className="rounded bg-neutral-800 px-1.5 py-0.5"
+              className="ui-btn-sm ui-btn-secondary"
             >
               Cancel
             </button>
           </span>
         ) : (
-          <button onClick={startDeleteConfirm} className="text-xs text-neutral-500 hover:text-red-400">
-            delete
+          <button type="button" onClick={startDeleteConfirm} className="ui-btn-sm ui-btn-ghost text-red-400">
+            Delete
           </button>
         )}
       </div>
@@ -187,7 +191,7 @@ function RuneRow({
         onBlur={saveMeaning}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         placeholder="AI context: what this conceptually does (used by batch description generation)"
-        className="w-full rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-neutral-500 outline-none border border-transparent hover:border-neutral-800 focus:border-neutral-700 focus:text-neutral-300"
+        className="ui-input-sm mt-2 border-transparent bg-background text-xs text-foreground-muted hover:border-border focus:text-foreground"
       />
     </div>
   );
@@ -208,7 +212,7 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
     setLastResult(null);
     try {
       const result = await addRuneApi(kind, trimmed);
-      setLastResult(`Added "${trimmed}" (${KIND_LABEL[kind]}) — generated ${result.addedCount} new spell combinations.`);
+      setLastResult(`Added "${trimmed}" (${KIND_LABEL[kind]}) -- generated ${result.addedCount} new spell combinations.`);
       setName('');
       onChanged();
     } catch (err) {
@@ -234,13 +238,13 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
   const modifierPairs = getAllModifierPairKeys(runeLists.modifierRunes);
 
   return (
-    <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <h2 className="text-sm font-semibold text-neutral-100">Add rune</h2>
-      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
+    <div className="ui-panel space-y-4">
+      <h2 className="ui-panel-header">Add rune</h2>
+      <form onSubmit={handleAdd} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as RuneKind)}
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-200"
+          className="ui-select-sm w-full sm:w-auto"
         >
           <option value="circleBase">Circle Base</option>
           <option value="primary">Primary</option>
@@ -251,27 +255,20 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Rune name"
-          className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-neutral-500"
+          className="ui-input-sm flex-1"
         />
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          Generate
-        </button>
-        <button
-          type="button"
-          onClick={handleUndo}
-          disabled={busy}
-          className="rounded border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800"
-        >
-          Undo last
-        </button>
+        <div className="flex gap-2">
+          <button type="submit" disabled={busy || !name.trim()} className="ui-btn-sm ui-btn-primary flex-1 sm:flex-none">
+            Generate
+          </button>
+          <button type="button" onClick={handleUndo} disabled={busy} className="ui-btn-sm ui-btn-secondary">
+            Undo last
+          </button>
+        </div>
       </form>
-      {lastResult && <p className="text-xs text-neutral-400">{lastResult}</p>}
+      {lastResult && <p className="text-xs text-foreground-muted">{lastResult}</p>}
 
-      <div className="space-y-3 pt-2">
+      <div className="space-y-4 border-t border-border-subtle pt-4">
         {(['circleBase', 'primary', 'modifier', 'control'] as RuneKind[]).map((k) => {
           const names =
             k === 'circleBase' ? runeLists.circleBases : k === 'primary' ? runeLists.primaryRunes : k === 'modifier' ? runeLists.modifierRunes : runeLists.controlRunes;
@@ -287,11 +284,11 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
               : runeMeanings.controlMeanings;
           return (
             <div key={k}>
-              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <h3 className="ui-label mb-2">
                 {KIND_LABEL[k]} ({names.length})
               </h3>
-              <div className="flex flex-col gap-1.5">
-                {names.length === 0 && <span className="text-xs italic text-neutral-600">none yet</span>}
+              <div className="flex flex-col gap-2">
+                {names.length === 0 && <span className="text-xs italic text-foreground-subtle">none yet</span>}
                 {names.map((n) => (
                   <RuneRow
                     key={n}
@@ -309,12 +306,17 @@ export function RunePanel({ runeLists, runeNameConfig, runeMeanings, onChanged }
         })}
       </div>
 
-      <button onClick={() => setShowNaming((v) => !v)} className="text-xs text-indigo-400 hover:text-indigo-300">
+      <button
+        type="button"
+        onClick={() => setShowNaming((v) => !v)}
+        className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover"
+      >
+        {showNaming ? <ChevronDownIcon /> : <ChevronRightIcon />}
         {showNaming ? 'Hide' : 'Show'} modifier pair names ({modifierPairs.length})
       </button>
       {showNaming && (
-        <div className="space-y-1.5 rounded border border-neutral-800 p-2">
-          {modifierPairs.length === 0 && <p className="text-xs italic text-neutral-600">Add 2+ modifiers to create pairs</p>}
+        <div className="space-y-2 rounded-md border border-border-subtle bg-surface-raised p-3">
+          {modifierPairs.length === 0 && <p className="text-xs italic text-foreground-subtle">Add 2+ modifiers to create pairs</p>}
           {modifierPairs.map((pairKey) => {
             const [m1, m2] = parseModifierPairKey(pairKey);
             return (
@@ -335,18 +337,18 @@ function PairNameRow({ mod1, mod2, initial, onChanged }: { mod1: string; mod2: s
     onChanged();
   };
   return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="w-40 truncate text-neutral-400">
+    <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center">
+      <span className="truncate text-foreground-muted sm:w-40">
         {mod1} + {mod2}
       </span>
-      <span className="text-neutral-600">→</span>
+      <ArrowRightIcon className="hidden text-foreground-subtle sm:block" />
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={save}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         placeholder={`${mod1} ${mod2}`}
-        className="flex-1 rounded border border-neutral-800 bg-neutral-950 px-1.5 py-0.5 text-neutral-200 outline-none focus:border-neutral-600"
+        className="ui-input-sm flex-1"
       />
     </div>
   );

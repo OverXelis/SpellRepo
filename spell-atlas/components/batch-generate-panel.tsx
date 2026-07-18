@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RuneLists } from '@/lib/core/types';
 import { estimateGenerationCost, searchSpellsApi, type CostEstimate } from '@/lib/api-client';
+import { ChevronRightIcon } from '@/components/ui/icons';
 
 interface Props {
   runeLists: RuneLists;
@@ -43,8 +44,6 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    // Standard fetch-on-filter-change pattern -- see the equivalent, more
-    // detailed comment in components/spell-table.tsx.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountLoading(true);
     searchSpellsApi({ ...scopeFilters, needsEnrichment: true, limit: 1 })
@@ -140,17 +139,17 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
           const fieldsStr = fields.length > 0 ? `generated: ${fields.join(', ')}` : 'nothing to generate (already complete)';
           const tagsStr = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
           const newTagNote = newTags.length > 0 ? ` (new tag${newTags.length > 1 ? 's' : ''}: ${newTags.join(', ')})` : '';
-          appendLog(`✅ ${event.name}${tagsStr} (${fieldsStr})${newTagNote}`, 'success');
+          appendLog(`OK ${event.name}${tagsStr} (${fieldsStr})${newTagNote}`, 'success');
         } else {
-          appendLog(`❌ Spell ${event.spellId}: ${event.message}`, 'error');
+          appendLog(`ERR spell ${event.spellId}: ${event.message}`, 'error');
         }
         break;
       }
       case 'batch_warning':
-        appendLog(`⚠️ Batch ${(event.batchIndex as number) + 1}: ${event.message}`, 'warning');
+        appendLog(`WARN batch ${(event.batchIndex as number) + 1}: ${event.message}`, 'warning');
         break;
       case 'batch_error':
-        appendLog(`❌ Batch ${(event.batchIndex as number) + 1} failed: ${event.message}`, 'error');
+        appendLog(`ERR batch ${(event.batchIndex as number) + 1} failed: ${event.message}`, 'error');
         break;
       case 'done':
         setSummary(
@@ -167,33 +166,35 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
   if (!open) {
     return (
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800/60"
+        className="ui-panel flex w-full items-center justify-between text-left hover:bg-surface-hover/60"
       >
-        ✨ Generate descriptions with AI
+        <span className="text-sm font-semibold text-foreground">Generate descriptions with AI</span>
+        <ChevronRightIcon className="text-foreground-subtle" />
       </button>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-100">✨ Generate descriptions with AI</h2>
-        <button onClick={() => setOpen(false)} className="text-xs text-neutral-500 hover:text-neutral-300">
+    <div className="ui-panel space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="ui-panel-header">Generate descriptions with AI</h2>
+        <button type="button" onClick={() => setOpen(false)} className="ui-btn-sm ui-btn-ghost">
           Collapse
         </button>
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-foreground-muted">
         Fills in name/description/summary/tags for spells missing any of them, in batches of multiple spells per API
         call. Never overwrites fields you&apos;ve already set.
       </p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <select
           value={circleBase}
           onChange={(e) => setCircleBase(e.target.value)}
           disabled={running}
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
+          className="ui-select-sm disabled:opacity-50"
         >
           <option value="">All circle bases</option>
           {runeLists.circleBases.map((b) => (
@@ -206,7 +207,7 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
           value={primaryRune}
           onChange={(e) => setPrimaryRune(e.target.value)}
           disabled={running}
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
+          className="ui-select-sm disabled:opacity-50"
         >
           <option value="">All primary runes</option>
           {runeLists.primaryRunes.map((r) => (
@@ -215,7 +216,7 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-1 text-xs text-neutral-400">
+        <label className="flex items-center gap-2 text-xs text-foreground-muted">
           Max this run
           <input
             type="number"
@@ -224,10 +225,10 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
             value={maxSpells}
             onChange={(e) => setMaxSpells(Number(e.target.value) || 1)}
             disabled={running}
-            className="w-16 rounded border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-200 disabled:opacity-50"
+            className="ui-input-sm w-20 disabled:opacity-50"
           />
         </label>
-        <label className="flex items-center gap-1 text-xs text-neutral-400">
+        <label className="flex items-center gap-2 text-xs text-foreground-muted">
           Spells/call
           <input
             type="number"
@@ -236,27 +237,27 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
             value={batchSize}
             onChange={(e) => setBatchSize(Number(e.target.value) || 1)}
             disabled={running}
-            className="w-14 rounded border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-200 disabled:opacity-50"
+            className="ui-input-sm w-20 disabled:opacity-50"
           />
         </label>
       </div>
 
-      <div className="rounded border border-neutral-800 bg-neutral-950/60 p-2 text-xs text-neutral-400">
+      <div className="rounded-md border border-border-subtle bg-background p-3 text-xs text-foreground-muted">
         {countLoading ? (
           'Checking...'
         ) : availableCount === null ? (
           'Could not check how many spells need enrichment.'
         ) : (
           <>
-            <span className="text-neutral-200">{availableCount}</span> spell{availableCount === 1 ? '' : 's'} in this
+            <span className="text-foreground">{availableCount}</span> spell{availableCount === 1 ? '' : 's'} in this
             scope need enrichment. This run will process up to{' '}
-            <span className="text-neutral-200">{Math.min(availableCount, maxSpells)}</span> of them in{' '}
-            <span className="text-neutral-200">{estimate?.batchCount ?? '?'}</span> API call
+            <span className="text-foreground">{Math.min(availableCount, maxSpells)}</span> of them in{' '}
+            <span className="text-foreground">{estimate?.batchCount ?? '?'}</span> API call
             {estimate?.batchCount === 1 ? '' : 's'}.
             {estimate && (
               <>
                 {' '}
-                Estimated cost: <span className="text-neutral-200">~${estimate.estCostUsd.toFixed(3)}</span> (rough
+                Estimated cost: <span className="text-foreground">~${estimate.estCostUsd.toFixed(3)}</span> (rough
                 estimate, using {estimate.model}).
               </>
             )}
@@ -267,43 +268,44 @@ export function BatchGeneratePanel({ runeLists, onDataChanged }: Props) {
       <div className="flex gap-2">
         {!running ? (
           <button
+            type="button"
             onClick={start}
             disabled={!availableCount}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="ui-btn-sm ui-btn-primary"
           >
             Start
           </button>
         ) : (
-          <button onClick={stop} className="rounded bg-red-900/60 px-3 py-1.5 text-sm font-medium text-red-200 hover:bg-red-900">
+          <button type="button" onClick={stop} className="ui-btn-sm ui-btn-danger">
             Stop
           </button>
         )}
       </div>
 
       {(log.length > 0 || running) && (
-        <div className="max-h-56 space-y-0.5 overflow-y-auto rounded border border-neutral-800 bg-neutral-950 p-2 font-mono text-[11px]">
+        <div className="max-h-56 space-y-0.5 overflow-y-auto rounded-md border border-border-subtle bg-background p-3 font-mono text-[11px]">
           {log.map((entry) => (
             <div
               key={entry.id}
               className={
                 entry.tone === 'success'
-                  ? 'text-emerald-400'
+                  ? 'text-success'
                   : entry.tone === 'error'
                   ? 'text-red-400'
                   : entry.tone === 'warning'
-                  ? 'text-amber-400'
-                  : 'text-neutral-500'
+                  ? 'text-warning'
+                  : 'text-foreground-subtle'
               }
             >
               {entry.text}
             </div>
           ))}
-          {running && <div className="text-neutral-600">...</div>}
+          {running && <div className="text-foreground-subtle">...</div>}
           <div ref={logEndRef} />
         </div>
       )}
 
-      {summary && <p className="text-xs text-neutral-300">{summary}</p>}
+      {summary && <p className="text-xs text-foreground-muted">{summary}</p>}
     </div>
   );
 }

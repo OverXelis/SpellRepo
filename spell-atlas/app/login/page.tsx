@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function LoginForm() {
@@ -35,24 +36,26 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-6">
-        <h1 className="text-lg font-semibold text-neutral-100">Spell Atlas</h1>
-        <p className="text-sm text-neutral-400">Enter the passphrase to continue.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+      <form onSubmit={handleSubmit} className="ui-panel w-full max-w-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <Image src="/logo.png" alt="SWC" width={40} height={40} className="h-10 w-10 rounded-md" priority />
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Spell Atlas</h1>
+            <p className="text-xs text-foreground-muted">Spell Weaver Chronicles</p>
+          </div>
+        </div>
+        <p className="text-sm text-foreground-muted">Enter the passphrase to continue.</p>
         <input
           type="password"
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Passphrase"
-          className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500"
+          className="ui-input"
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading || !password}
-          className="w-full rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading || !password} className="ui-btn ui-btn-primary w-full">
           {loading ? 'Checking...' : 'Enter'}
         </button>
       </form>
