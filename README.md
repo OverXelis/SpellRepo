@@ -8,12 +8,6 @@ The active application lives in [`spell-atlas/`](spell-atlas/). Deploy that dire
 
 Spell Atlas helps you manage a combinatorial spell library: circle bases, primary runes, modifiers, and control runes combine into every valid spell your system allows. You curate the results, tag favorites, and use Claude to research spells against your own database while you write.
 
-| View | Path | Purpose |
-|------|------|---------|
-| **Builder** | `/builder` | Add runes, browse and edit spells, manage tags, import/export JSON |
-| **Contemplate Meaning** | `/contemplate` | Batch-generate names, summaries, descriptions, and tags with Claude; review recent results before returning to the Builder |
-| **Chat** | `/chat` | Describe a scene in prose; Claude searches your database (read-only) and suggests fitting spells |
-
 One SQLite database on your server (NAS, homelab, or local machine). Reach it from a phone, Mac, or PC over Tailscale or your private network — no export/import sync between devices.
 
 ## Quick start (production)
